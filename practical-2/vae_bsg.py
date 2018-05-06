@@ -29,12 +29,12 @@ from nltk import sent_tokenize
 from collections import defaultdict
 import keras
 from keras.models import Sequential
-from keras.layers import Dense, Flatten
+from keras.layers import Dense
 #from keras.optimizers import SGD
 import numpy as np
 window_sz = 5 #five words left, five words right
 
-file_path = ''
+sfile_path = ''
 def read_input(fn):
     with open(fn, 'r') as content_file:
         content = content_file.read()
@@ -72,7 +72,7 @@ def onehotencoding(idx,word2idx):
     #print(idx, hot_enc[idx], hot_enc)
     return hot_enc
 	#onehot_encoded.append(letter)
-def get_features(sentences, word2idx, window_size):
+def get_features(sentences, word2idx, window_size, emb_sz):
     #sentences: set of sentences
     #word2idx dict with the word index of the whole corpus
     #window size: size of the context
@@ -82,19 +82,25 @@ def get_features(sentences, word2idx, window_size):
     
     for sentence in sentences:
         for idx, w_x in enumerate(sentence):
-            for w_y in sentence[max(idx - window_size, 0) :\
-                                    min(idx + window_size, len(sentence)) + 1] : 
+            pairs = []
+            temp = np.zeros((window_size*2, len(word2idx)))
+            R = np.random.rand(emb_sz, len(word2idx))
+            for i, w_y in enumerate(sentence[max(idx - window_size, 0) :\
+                                    min(idx + window_size, len(sentence)) + 1]) : 
                 if w_y != w_x:
                     #print('x=', w_x, 'y=', w_y)
-                    X.append(onehotencoding(word2idx[w_x], word2idx))
-                    Y.append(onehotencoding(word2idx[w_y], word2idx))
-    return X,Y
+                    temp[i] = R*onehotencoding(word2idx[w_y], word2idx) 
+                    #X.append(onehotencoding(word2idx[w_x], word2idx))
+                    #Y.append(onehotencoding(word2idx[w_y], word2idx))
+            #print('i=',i)
+            temp[i] = onehotencoding(word2idx[w_x], word2idx)
+            #print('shape temp=', temp.shape, 'shape r=', r.shape)
+            X.append(temp*r)
+    return X
 
-corpus_dim = 100
 batch_size = 100
-original_dim = corpus_dim
 latent_dim = 10
-intermediate_dim = 256
+intermediate_dim = 50
 epochs = 50
 epsilon_std = 1.0
 window_size=5
@@ -103,15 +109,23 @@ window_size=5
 tr_word2idx, tr_idx2word, sent_train = read_input('./data/dev.en') 
 tst_word2idx, tst_idx2word,  sent_test = read_input('./data/test.en')
 #print(tr_word2idx)
+corpus_dim = len(tr_word2idx)
+original_dim = corpus_dim
+flatten_sz = (window_size*2+1)*original_dim
+context_sz=window_size*2+1
 
-x_train, y_train = get_features(sent_train, tr_word2idx, window_size)
-#print(x_train)
+x_train  = get_features(sent_train, tr_word2idx, window_size)
+print('shape training set=',np.array(x_train).shape)
 
-x_test, y_test = get_features(sent_test, tst_word2idx, window_size)
+x_test = get_features(sent_test, tst_word2idx, window_size)
 
-x = Input(shape=(original_dim,))
-h = Dense(intermediate_dim)(x)
-z_mean = Dense(latent_dim, activation='relu')(h)
+x = Input(shape=(None,flatten_sz))
+l = Dense(flatten_sz)(x)
+relu=Dense(flatten_sz, activation='relu')(l)
+relu=K.reshape(relu,(-1,window_size*2+1,original_dim))
+h=K.sum(relu, axis=1)
+print('shape h=', h.shape, 'type h=', type(h))
+z_mean = Dense(latent_dim)(h)
 z_log_var = Dense(latent_dim, activation='softplus')(h)
 
 
@@ -144,7 +158,12 @@ class CustomVariationalLayer(Layer):
         super(CustomVariationalLayer, self).__init__(**kwargs)
 
     def vae_loss(self, x, x_decoded_mean):
-        xent_loss = original_dim * metrics.binary_crossentropy(x, x_decoded_mean)
+        print('shape x=', x.shape, 'x_decoded_mean shape=', x_decoded_mean.shape)
+        #K.reshape(relu,(-1,window_size*2+1,original_dim))
+        #x=K.sum(x, axis=1)
+        s = Lambda(lambda f: K.sum(f, axis=1))(x)
+        print('shape s=', s.shape, 'x_decoded_mean shape=', x_decoded_mean.shape)
+        xent_loss = original_dim * metrics.binary_crossentropy(s, x_decoded_mean)
         kl_loss = - 0.5 * K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
         return K.mean(xent_loss + kl_loss)
 
@@ -156,7 +175,7 @@ class CustomVariationalLayer(Layer):
         # We won't actually use the output.
         return x
 
-y = CustomVariationalLayer()([x, x_decoded_mean])
+y = CustomVariationalLayer()([K.reshape(x,(-1,context_sz,original_dim)), x_decoded_mean])
 vae = Model(x, y)
 vae.compile(optimizer='rmsprop', loss=None)
 
@@ -177,10 +196,7 @@ encoder = Model(x, z_mean)
 
 # display a 2D plot of the digit classes in the latent space
 x_test_encoded = encoder.predict(x_test, batch_size=batch_size)
-fig=plt.figure(figsize=(6, 6))
-p=plt.scatter(x_test_encoded[:, 0], x_test_encoded[:, 1], c='r')
-#fig.colorbar(p, shrink=0.5, aspect=5)
-plt.show()
+
 
 # build a digit generator that can sample from the learned distribution
 decoder_input = Input(shape=(latent_dim,))
@@ -189,22 +205,3 @@ _x_decoded_mean = decoder_mean(_h_decoded)
 generator = Model(decoder_input, _x_decoded_mean)
 
 # display a 2D manifold of the digits
-n = 15  # figure with 15x15 digits
-digit_size = 28
-figure = np.zeros((digit_size * n, digit_size * n))
-# linearly spaced coordinates on the unit square were transformed through the inverse CDF (ppf) of the Gaussian
-# to produce values of the latent variables z, since the prior of the latent space is Gaussian
-grid_x = norm.ppf(np.linspace(0.05, 0.95, n))
-grid_y = norm.ppf(np.linspace(0.05, 0.95, n))
-
-for i, yi in enumerate(grid_x):
-    for j, xi in enumerate(grid_y):
-        z_sample = np.array([[xi, yi]])
-        x_decoded = generator.predict(z_sample)
-        digit = x_decoded[0].reshape(digit_size, digit_size)
-        figure[i * digit_size: (i + 1) * digit_size,
-               j * digit_size: (j + 1) * digit_size] = digit
-
-plt.figure(figsize=(10, 10))
-plt.imshow(figure, cmap='Greys_r')
-plt.show()
