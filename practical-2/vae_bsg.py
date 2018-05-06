@@ -78,24 +78,23 @@ def get_features(sentences, word2idx, window_size, emb_sz):
     #window size: size of the context
     #Return: X, Y word pairs
     X=[]
-    Y=[]
+
     
+    R = np.random.rand(emb_sz, len(word2idx))
     for sentence in sentences:
         for idx, w_x in enumerate(sentence):
-            pairs = []
             temp = np.zeros((window_size*2, len(word2idx)))
-            R = np.random.rand(emb_sz, len(word2idx))
             for i, w_y in enumerate(sentence[max(idx - window_size, 0) :\
                                     min(idx + window_size, len(sentence)) + 1]) : 
                 if w_y != w_x:
                     #print('x=', w_x, 'y=', w_y)
-                    temp[i] = R*onehotencoding(word2idx[w_y], word2idx) 
+                    temp[i] = np.hstack(R[word2idx[w_y]], R[word2idx[w_x]]) #like this
+                    temp[i] = np.hstack(R[word2idx[w_y]*word2idx[w_x]], R[word2idx[w_x]*word2idx[w_y]]) # or  like this
                     #X.append(onehotencoding(word2idx[w_x], word2idx))
                     #Y.append(onehotencoding(word2idx[w_y], word2idx))
             #print('i=',i)
-            temp[i] = onehotencoding(word2idx[w_x], word2idx)
             #print('shape temp=', temp.shape, 'shape r=', r.shape)
-            X.append(temp*r)
+            X.append(temp)
     return X
 
 batch_size = 100
