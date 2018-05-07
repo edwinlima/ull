@@ -86,13 +86,15 @@ def get_features(sentences, word2idx, window_size, emb_sz):
             temp = [] #np.zeros((window_size*2, emb_sz*2))
             R = np.random.rand(len(word2idx),emb_sz)
             for i, w_y in enumerate(sentence[max(idx - window_size, 0) :\
-                                    min(idx + window_size, len(sentence))+1]) :
+                                    min(idx + window_size, len(sentence))]) :
                 if w_y != w_x:
+                    print('i=',i, 'w=', w_x, 'c=', w_y)
                     
                     #print('R_w=', R[word2idx[w_x]], 'R_c=', R[word2idx[w_y]])
                     temp.append(np.hstack((R[word2idx[w_x]], R[word2idx[w_y]])))
 
             X.append(temp)
+            input() # comment this, we have this here only to check the output.
     print('shape X=', len(X), len(X[0]), len(X[1]), 's 0=',sentences[0], 's 1=', sentences[1])
     return X
 
