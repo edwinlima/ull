@@ -22,6 +22,7 @@ from keras import backend as K
 from keras import metrics
 from keras.datasets import mnist
 import tensorflow as tf
+import util
 
 
 
@@ -35,67 +36,7 @@ import numpy as np
 window_sz = 5 #five words left, five words right
 
 sfile_path = ''
-def read_input(fn):
-    with open(fn, 'r') as content_file:
-        content = content_file.read()
-    #print(content)
-    sentences = sent_tokenize(content)
-    #print(sentences)
-    punctuation = ['.', ',', '"', "'", '?', '!', ':', ';', '(', ')', '[', ']', '{', '}', '\n']
-    sentences_tokens = []
-    corpus = []
-    for sentence in sentences:
-        s= [w for w in sentence.split() if w not in punctuation]
-        sentences_tokens.append(s) 
-        corpus = corpus + s
-    corpus = set(corpus)
-    word2idx, idx2word=encode_corpus(corpus)
-    return word2idx, idx2word, sentences_tokens
-#print(corpus)
 
-def encode_corpus(corpus):
-    word2idx = defaultdict(list)
-    idx2word = defaultdict(list)
-    for idx, word in enumerate(corpus):
-        word2idx[word] = idx
-        idx2word[idx] = word
-    return word2idx, idx2word
-    
-#print('word 0=', idx2word[0], 'word to index=', word2idx[idx2word[0]]) 
-
-def onehotencoding(idx,word2idx):
-#c: corpus    
-    hot_enc = list()
-    hot_enc = np.zeros(len(word2idx))
-    #idx = word2idx[word]
-    hot_enc[idx] = 1.
-    #print(idx, hot_enc[idx], hot_enc)
-    return hot_enc
-	#onehot_encoded.append(letter)
-def get_features(sentences, word2idx, window_size, emb_sz):
-    #sentences: set of sentences
-    #word2idx dict with the word index of the whole corpus
-    #window size: size of the context
-    #Return: X, Y word pairs
-    X=[]
-
-    
-    R = np.random.rand(emb_sz, len(word2idx))
-    for sentence in sentences:
-        for idx, w_x in enumerate(sentence):
-            temp = np.zeros((window_size*2, len(word2idx)))
-            for i, w_y in enumerate(sentence[max(idx - window_size, 0) :\
-                                    min(idx + window_size, len(sentence)) + 1]) : 
-                if w_y != w_x:
-                    #print('x=', w_x, 'y=', w_y)
-                    temp[i] = np.hstack(R[word2idx[w_y]], R[word2idx[w_x]]) #like this
-                    temp[i] = np.hstack(R[word2idx[w_y]*word2idx[w_x]], R[word2idx[w_x]*word2idx[w_y]]) # or  like this
-                    #X.append(onehotencoding(word2idx[w_x], word2idx))
-                    #Y.append(onehotencoding(word2idx[w_y], word2idx))
-            #print('i=',i)
-            #print('shape temp=', temp.shape, 'shape r=', r.shape)
-            X.append(temp)
-    return X
 
 batch_size = 100
 latent_dim = 10
@@ -103,26 +44,29 @@ intermediate_dim = 50
 epochs = 50
 epsilon_std = 1.0
 window_size=5
+emb_sz=50
+context_sz=window_size*2
 
 
-tr_word2idx, tr_idx2word, sent_train = read_input('./data/dev.en') 
-tst_word2idx, tst_idx2word,  sent_test = read_input('./data/test.en')
+tr_word2idx, tr_idx2word, sent_train = util.read_input('./data/dev.en') 
+tst_word2idx, tst_idx2word,  sent_test = util.read_input('./data/test.en')
 #print(tr_word2idx)
 corpus_dim = len(tr_word2idx)
 original_dim = corpus_dim
 flatten_sz = (window_size*2+1)*original_dim
 context_sz=window_size*2+1
+hidden=100
 
-x_train  = get_features(sent_train, tr_word2idx, window_size)
+x_train  = util.get_features(sent_train, tr_word2idx, window_size, emb_sz)
 print('shape training set=',np.array(x_train).shape)
 
-x_test = get_features(sent_test, tst_word2idx, window_size)
+#x_test = get_features(sent_test, tst_word2idx, window_size, emb_sz)
 
-x = Input(shape=(None,flatten_sz))
-l = Dense(flatten_sz)(x)
-relu=Dense(flatten_sz, activation='relu')(l)
-relu=K.reshape(relu,(-1,window_size*2+1,original_dim))
-h=K.sum(relu, axis=1)
+x = Input(shape=(None,context_sz, emb_sz*2))
+M = Dense(hidden)(x)
+r=Dense(hidden, activation='relu')(M)
+#relu=K.reshape(relu,(-1,window_size*2+1,original_dim))
+h=K.sum(r, axis=1)
 print('shape h=', h.shape, 'type h=', type(h))
 z_mean = Dense(latent_dim)(h)
 z_log_var = Dense(latent_dim, activation='softplus')(h)
@@ -140,6 +84,7 @@ def sampling(args):
 
 # note that "output_shape" isn't necessary with the TensorFlow backend
 z = Lambda(sampling, output_shape=(latent_dim,))([z_mean, z_log_var])
+
 
 # we instantiate these layers separately so as to reuse them later
 decoder_h = Dense(intermediate_dim)
@@ -194,7 +139,7 @@ vae.fit(x_train,
 encoder = Model(x, z_mean)
 
 # display a 2D plot of the digit classes in the latent space
-x_test_encoded = encoder.predict(x_test, batch_size=batch_size)
+#x_test_encoded = encoder.predict(x_test, batch_size=batch_size)
 
 
 # build a digit generator that can sample from the learned distribution
