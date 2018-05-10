@@ -55,7 +55,7 @@ tst_word2idx, tst_idx2word,  sent_test = util.read_input('./data/test.en')
 corpus_dim = len(tr_word2idx)
 original_dim = corpus_dim
 flatten_sz = (window_size*2+1)*original_dim
-hidden1=100
+hidden=100
 
 x_train  = util.get_features(sent_train, tr_word2idx, window_size, emb_sz)
 print('shape training set=',np.array(x_train).shape, 'context_sz=', context_sz, 'emb sz=', emb_sz*2)
@@ -65,17 +65,17 @@ x_train_hat = np.reshape(x_train, (x_train.shape[0], x_train.shape[1]*x_train.sh
 
 
 print('shape=', context_sz*emb_sz*2)
-hidden=x_train.shape[1]*x_train.shape[2]
-latent_dim=hidden
+hidden_reshap=x_train.shape[1]*x_train.shape[2]
 sz=context_sz*emb_sz*2
 x = Input(shape=(sz,))
-M = Dense(hidden)(x)
-r=Dense(hidden, activation='relu')(M)
+M = Dense(hidden_reshap)(x)
+r=Dense(hidden_reshap, activation='relu')(M)
 r=K.reshape(r,(-1,context_sz,emb_sz*2))
 h=K.sum(r, axis=1)
-print('shape h=', h.shape, 'type h=', type(h))
-z_mean = Dense(latent_dim)(h)
-z_log_var = Dense(latent_dim, activation='softplus')(h)
+print('shape h sum=', h.shape, 'type h=', type(h))
+z_mean = Dense(hidden)(h)
+print('shape z_mean=', z_mean.shape)
+z_log_var = Dense(hidden, activation='softplus')(h)
 
 
 
@@ -83,13 +83,14 @@ z_log_var = Dense(latent_dim, activation='softplus')(h)
 def sampling(args):
     z_mean, z_log_var = args
     print('shape z_mean=', K.shape(z_mean)[0])
-    epsilon = K.random_normal_variable(shape=(, latent_dim), mean=0.,scale=1.0)
-    
+    epsilon = K.random_normal(shape=(K.shape(z_mean)[0], hidden), mean=0.,
+                              stddev=epsilon_std)
+        
     #print("shape z_mean=", K.eval(K.shape(z_mean)[0]))
     return z_mean + K.exp(z_log_var / 2) * epsilon
 
 # note that "output_shape" isn't necessary with the TensorFlow backend
-z = Lambda(sampling, output_shape=(latent_dim,))([z_mean, z_log_var])
+z = Lambda(sampling, output_shape=(hidden,))([z_mean, z_log_var])
 
 
 # we instantiate these layers separately so as to reuse them later
@@ -113,9 +114,9 @@ class CustomVariationalLayer(Layer):
         print('shape x=', x.shape, 'x_decoded_mean shape=', x_decoded_mean.shape)
         #K.reshape(relu,(-1,window_size*2+1,original_dim))
         #x=K.sum(x, axis=1)
-        s = Lambda(lambda f: K.sum(f, axis=1))(x)
-        print('shape s=', s.shape, 'x_decoded_mean shape=', x_decoded_mean.shape)
-        xent_loss = original_dim * metrics.binary_crossentropy(s, x_decoded_mean)
+        #s = Lambda(lambda f: K.sum(f, axis=1))(x)
+        #print('shape s=', s.shape, 'x_decoded_mean shape=', x_decoded_mean.shape)
+        xent_loss = original_dim * metrics.binary_crossentropy(x, x_decoded_mean)
         kl_loss = - 0.5 * K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
         return K.mean(xent_loss + kl_loss)
 
@@ -151,7 +152,7 @@ encoder = Model(x, z_mean)
 
 
 # build a digit generator that can sample from the learned distribution
-decoder_input = Input(shape=(latent_dim,))
+decoder_input = Input(shape=(hidden,))
 _h_decoded = decoder_h(decoder_input)
 _x_decoded_mean = decoder_mean(_h_decoded)
 generator = Model(decoder_input, _x_decoded_mean)
