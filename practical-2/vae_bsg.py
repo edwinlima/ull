@@ -40,7 +40,8 @@ sfile_path = ''
 
 batch_size = 100
 latent_dim = 10
-intermediate_dim = 50
+
+#intermediate_dim = 50
 epochs = 50
 epsilon_std = 1.0
 window_size=5
@@ -54,18 +55,23 @@ tst_word2idx, tst_idx2word,  sent_test = util.read_input('./data/test.en')
 corpus_dim = len(tr_word2idx)
 original_dim = corpus_dim
 flatten_sz = (window_size*2+1)*original_dim
-context_sz=window_size*2+1
-hidden=100
+hidden1=100
 
 x_train  = util.get_features(sent_train, tr_word2idx, window_size, emb_sz)
-print('shape training set=',np.array(x_train).shape)
+print('shape training set=',np.array(x_train).shape, 'context_sz=', context_sz, 'emb sz=', emb_sz*2)
 
 #x_test = get_features(sent_test, tst_word2idx, window_size, emb_sz)
+x_train_hat = np.reshape(x_train, (x_train.shape[0], x_train.shape[1]*x_train.shape[2]))
 
-x = Input(shape=(None,context_sz, emb_sz*2))
+
+print('shape=', context_sz*emb_sz*2)
+hidden=x_train.shape[1]*x_train.shape[2]
+latent_dim=hidden
+sz=context_sz*emb_sz*2
+x = Input(shape=(sz,))
 M = Dense(hidden)(x)
 r=Dense(hidden, activation='relu')(M)
-#relu=K.reshape(relu,(-1,window_size*2+1,original_dim))
+r=K.reshape(r,(-1,context_sz,emb_sz*2))
 h=K.sum(r, axis=1)
 print('shape h=', h.shape, 'type h=', type(h))
 z_mean = Dense(latent_dim)(h)
@@ -76,8 +82,8 @@ z_log_var = Dense(latent_dim, activation='softplus')(h)
 
 def sampling(args):
     z_mean, z_log_var = args
-    epsilon = K.random_normal(shape=(K.shape(z_mean)[0], latent_dim), mean=0.,
-                              stddev=epsilon_std)
+    print('shape z_mean=', K.shape(z_mean)[0])
+    epsilon = K.random_normal_variable(shape=(, latent_dim), mean=0.,scale=1.0)
     
     #print("shape z_mean=", K.eval(K.shape(z_mean)[0]))
     return z_mean + K.exp(z_log_var / 2) * epsilon
@@ -87,7 +93,9 @@ z = Lambda(sampling, output_shape=(latent_dim,))([z_mean, z_log_var])
 
 
 # we instantiate these layers separately so as to reuse them later
-decoder_h = Dense(intermediate_dim)
+# Generator: We generate new data given the latent variable z
+
+decoder_h = Dense(emb_sz)
 decoder_mean = Dense(original_dim, activation='softmax')
 h_decoded = decoder_h(z)
 x_decoded_mean = decoder_mean(h_decoded)
@@ -129,7 +137,7 @@ vae.compile(optimizer='rmsprop', loss=None)
 #print("xtrain shape=", x_train.shape)        
 #x_train=sentences        
 
-vae.fit(x_train,
+vae.fit(x_train_hat,
         shuffle=True,
         epochs=epochs,
         batch_size=batch_size)#,
