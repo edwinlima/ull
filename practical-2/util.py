@@ -59,6 +59,7 @@ def read_input(fn):
         sentences_tokens.append(s) 
         corpus = corpus + s
     corpus = set(corpus+reserved)
+    print('len corpus=', len(corpus))
     word2idx, idx2word=encode_corpus(corpus)
     return word2idx, idx2word, sentences_tokens
 #print(corpus)

@@ -16,7 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import norm
 
-from keras.layers import Input, Dense, Lambda, Layer
+from keras.layers import Input, Dense, Lambda, Layer, Reshape
 from keras.models import Model
 from keras import backend as K
 from keras import metrics
@@ -29,8 +29,6 @@ import util
 from nltk import sent_tokenize
 from collections import defaultdict
 import keras
-from keras.models import Sequential
-from keras.layers import Dense
 #from keras.optimizers import SGD
 import numpy as np
 window_sz = 5 #five words left, five words right
@@ -76,17 +74,19 @@ print('shape h sum=', h.shape, 'type h=', type(h))
 z_mean = Dense(hidden)(h)
 print('shape z_mean=', z_mean.shape)
 z_log_var = Dense(hidden, activation='softplus')(h)
+#x_hat = Dense()
 
 
 
 
 def sampling(args):
     z_mean, z_log_var = args
-    print('shape z_mean=', K.shape(z_mean)[0])
+    print('shape z_mean sampling=', K.shape(z_mean), 'shape z_log_var=', z_log_var)
     epsilon = K.random_normal(shape=(K.shape(z_mean)[0], hidden), mean=0.,
                               stddev=epsilon_std)
         
     #print("shape z_mean=", K.eval(K.shape(z_mean)[0]))
+    
     return z_mean + K.exp(z_log_var / 2) * epsilon
 
 # note that "output_shape" isn't necessary with the TensorFlow backend
@@ -111,11 +111,13 @@ class CustomVariationalLayer(Layer):
         super(CustomVariationalLayer, self).__init__(**kwargs)
 
     def vae_loss(self, x, x_decoded_mean):
-        print('shape x=', x.shape, 'x_decoded_mean shape=', x_decoded_mean.shape)
         #K.reshape(relu,(-1,window_size*2+1,original_dim))
         #x=K.sum(x, axis=1)
         #s = Lambda(lambda f: K.sum(f, axis=1))(x)
         #print('shape s=', s.shape, 'x_decoded_mean shape=', x_decoded_mean.shape)
+        x=K.flatten(x)
+        x_decoded_mean = K.flatten(x_decoded_mean)
+        print('shape x=', x.shape, 'x_decoded_mean shape=', x_decoded_mean.shape)
         xent_loss = original_dim * metrics.binary_crossentropy(x, x_decoded_mean)
         kl_loss = - 0.5 * K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
         return K.mean(xent_loss + kl_loss)
@@ -128,9 +130,27 @@ class CustomVariationalLayer(Layer):
         # We won't actually use the output.
         return x
 
-y = CustomVariationalLayer()([K.reshape(x,(-1,context_sz,original_dim)), x_decoded_mean])
-vae = Model(x, y)
-vae.compile(optimizer='rmsprop', loss=None)
+def vae_loss(x, x_decoded_mean):
+    # NOTE: binary_crossentropy expects a batch_size by dim
+    # for x and x_decoded_mean, so we MUST flatten these!
+    x = K.flatten(x)
+    x_decoded_mean = K.flatten(x_decoded_mean)
+    xent_loss = original_dim * metrics.binary_crossentropy(x, x_decoded_mean)
+    kl_loss = - 0.5 * K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
+    return xent_loss + kl_loss
+
+#y = CustomVariationalLayer()([K.reshape(x,(-1,context_sz,original_dim)), x_decoded_mean])
+print('shape x=', x.shape, 'x_decoded_mean shape=', x_decoded_mean.shape, 'context sz=', context_sz, 'emb_sz=', emb_sz)
+x_hat=Reshape([context_sz,emb_sz*2])(x)
+vae = Model(x, x_decoded_mean)
+x = K.flatten(x)
+x_decoded_mean = K.flatten(x_decoded_mean)
+xent_loss = original_dim * metrics.binary_crossentropy(x, x_decoded_mean)
+kl_loss = - 0.5 * K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
+vae_loss=xent_loss + kl_loss
+
+#vae_loss = vae_loss(x, x_decoded_mean)
+vae.compile(optimizer='rmsprop', loss=vae_loss)
 
 
 # train the VAE on MNIST digits
