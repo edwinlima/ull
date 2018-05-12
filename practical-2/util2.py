@@ -129,9 +129,10 @@ def get_features(sentences, word2idx, window_size, emb_sz):
             X.append(temp)
             
     X_hot=np.stack(X_hot)
-    print('X_hot=',X_hot.shape)
+    print('X_hot=',X.shape)
+
     X=np.stack(X)
-    return X, X_hot
+    return X
 
 
 batch_size = 100

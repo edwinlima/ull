@@ -52,28 +52,33 @@ tst_word2idx, tst_idx2word,  sent_test = util.read_input('./data/test.en')
 #print(tr_word2idx)
 corpus_dim = len(tr_word2idx)
 original_dim = corpus_dim
-flatten_sz = (window_size*2+1)*original_dim
 hidden=100
-
-x_train  = util.get_features(sent_train, tr_word2idx, window_size, emb_sz)
-print('shape training set=',np.array(x_train).shape, 'context_sz=', context_sz, 'emb sz=', emb_sz*2)
+x_train, x_hot  = util.get_features(sent_train, tr_word2idx, window_size, emb_sz)
+corpus_sz = len(tr_word2idx)
+flatten_sz = x_train.shape[0]* x_train.shape[1]
+emb_sz_2 = emb_sz*2
 
 #x_test = get_features(sent_test, tst_word2idx, window_size, emb_sz)
-x_train_hat = np.reshape(x_train, (x_train.shape[0], x_train.shape[1]*x_train.shape[2]))
-
-
-print('shape=', context_sz*emb_sz*2)
-hidden_reshap=x_train.shape[1]*x_train.shape[2]
-sz=context_sz*emb_sz*2
-x = Input(shape=(sz,))
-M = Dense(hidden_reshap)(x)
-r=Dense(hidden_reshap, activation='relu')(M)
-r=K.reshape(r,(-1,context_sz,emb_sz*2))
-h=K.sum(r, axis=1)
-print('shape h sum=', h.shape, 'type h=', type(h))
-z_mean = Dense(hidden)(h)
+x_train_hat = np.reshape(x_train, (flatten_sz,emb_sz_2))
+print('shape x_train_hat=', x_train_hat.shape)
+x = Input(shape=(emb_sz_2,)) 
+x_hot = Input(shape=(emb_sz_2,)) 
+print('shape x=', x.shape)
+M = Dense(hidden)(x)
+print('shape M =', M.shape)
+r=Dense(hidden, activation='relu')(M)
+print('shape r=', r.shape)
+r=Lambda(lambda u: K.reshape(u,(x_train.shape[0], context_sz,emb_sz*2)))(r)
+print('shape r reshape=', r.shape)
+h = Lambda(lambda x: K.sum(x, axis=1), output_shape=lambda s: (s[0], s[2]))(r)
+print('shape h sum=', h.shape)
+#h=K.transpose(h)
+#h = Lambda(lambda x: K.transpose(x))(h)
+#print('shape h transpose=', h.shape)
+z_mean = Dense(emb_sz)(h) #L
 print('shape z_mean=', z_mean.shape)
-z_log_var = Dense(hidden, activation='softplus')(h)
+z_log_var = Dense(emb_sz, activation='softplus')(h) #S
+print('shape z_log_var=', z_log_var.shape)
 #x_hat = Dense()
 
 
@@ -81,28 +86,31 @@ z_log_var = Dense(hidden, activation='softplus')(h)
 
 def sampling(args):
     z_mean, z_log_var = args
-    print('shape z_mean sampling=', K.shape(z_mean), 'shape z_log_var=', z_log_var)
-    epsilon = K.random_normal(shape=(K.shape(z_mean)[0], hidden), mean=0.,
+    print('shape z_mean sampling=', z_log_var.shape, 'shape z_log_var=', z_log_var.shape)
+    epsilon = K.random_normal(shape=(K.shape(z_mean)[0], emb_sz), mean=0.,
                               stddev=epsilon_std)
         
-    #print("shape z_mean=", K.eval(K.shape(z_mean)[0]))
+    print("shape epsilon=", epsilon.shape )
     
     return z_mean + K.exp(z_log_var / 2) * epsilon
 
 # note that "output_shape" isn't necessary with the TensorFlow backend
-z = Lambda(sampling, output_shape=(hidden,))([z_mean, z_log_var])
+z = Lambda(sampling, output_shape=(emb_sz,))([z_mean, z_log_var])
 
 
 # we instantiate these layers separately so as to reuse them later
 # Generator: We generate new data given the latent variable z
-
+# These are the 'embeddings'
+print('z dim=',z.shape)
 decoder_h = Dense(emb_sz)
-decoder_mean = Dense(original_dim, activation='softmax')
+# vector fw 
+decoder_mean = Dense(corpus_sz, activation='softmax')
 h_decoded = decoder_h(z)
 x_decoded_mean = decoder_mean(h_decoded)
-#log_p_x_give_z = tf.reduce_sum(tf.log(tf.multiply(x,x_decoded_mean) + tf.multiply((1-x),(1-x_decoded_mean))), axis=1)
+# need to recover the corpus size here
+print('x_decoded_mean shape=', x_decoded_mean.shape)
+
 #s=tf.Session()
-#print("shape log_p_x_give_z=", log_p_x_give_z)
 
 # Custom loss layer
 class CustomVariationalLayer(Layer):
@@ -115,9 +123,9 @@ class CustomVariationalLayer(Layer):
         #x=K.sum(x, axis=1)
         #s = Lambda(lambda f: K.sum(f, axis=1))(x)
         #print('shape s=', s.shape, 'x_decoded_mean shape=', x_decoded_mean.shape)
-        x=K.flatten(x)
-        x_decoded_mean = K.flatten(x_decoded_mean)
-        print('shape x=', x.shape, 'x_decoded_mean shape=', x_decoded_mean.shape)
+        #x=K.flatten(x)
+        #x_decoded_mean = K.flatten(x_decoded_mean)
+        print('shape xxxxxs=', x.shape, 'x_decoded_mean shape=', x_decoded_mean.shape)
         xent_loss = original_dim * metrics.binary_crossentropy(x, x_decoded_mean)
         kl_loss = - 0.5 * K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
         return K.mean(xent_loss + kl_loss)
@@ -130,27 +138,24 @@ class CustomVariationalLayer(Layer):
         # We won't actually use the output.
         return x
 
-def vae_loss(x, x_decoded_mean):
-    # NOTE: binary_crossentropy expects a batch_size by dim
-    # for x and x_decoded_mean, so we MUST flatten these!
-    x = K.flatten(x)
-    x_decoded_mean = K.flatten(x_decoded_mean)
-    xent_loss = original_dim * metrics.binary_crossentropy(x, x_decoded_mean)
-    kl_loss = - 0.5 * K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
-    return xent_loss + kl_loss
+#def vae_loss(x, x_decoded_mean):
+#    # NOTE: binary_crossentropy expects a batch_size by dim
+#    # for x and x_decoded_mean, so we MUST flatten these!
+#    x = K.flatten(x)
+#    x_decoded_mean = K.flatten(x_decoded_mean)
+#    xent_loss = original_dim * metrics.binary_crossentropy(x, x_decoded_mean)
+#    kl_loss = - 0.5 * K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
+#    return xent_loss + kl_loss
 
-#y = CustomVariationalLayer()([K.reshape(x,(-1,context_sz,original_dim)), x_decoded_mean])
-print('shape x=', x.shape, 'x_decoded_mean shape=', x_decoded_mean.shape, 'context sz=', context_sz, 'emb_sz=', emb_sz)
-x_hat=Reshape([context_sz,emb_sz*2])(x)
-vae = Model(x, x_decoded_mean)
-x = K.flatten(x)
-x_decoded_mean = K.flatten(x_decoded_mean)
-xent_loss = original_dim * metrics.binary_crossentropy(x, x_decoded_mean)
-kl_loss = - 0.5 * K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
-vae_loss=xent_loss + kl_loss
+y = CustomVariationalLayer()([x_hot, x_decoded_mean])
+print('shape x=', x.shape, 'x_decoded_mean shape=', x_decoded_mean.shape, 'type x=', type(x), 'type x_d_mean=', type(x_decoded_mean))
+#_hat=Reshape([context_sz,emb_sz*2])(x)
+#x = Lambda(lambda v: K.batch_flatten(v))(x)
+#x_decoded_mean  = Lambda(lambda v: K.batch_flatten(v))(x_decoded_mean  )
+#x_decoded_mean = K.flatten(x_decoded_mean)
 
-#vae_loss = vae_loss(x, x_decoded_mean)
-vae.compile(optimizer='rmsprop', loss=vae_loss)
+vae = Model(x, y)
+vae.compile(optimizer='rmsprop', loss=None)
 
 
 # train the VAE on MNIST digits

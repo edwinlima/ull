@@ -93,13 +93,16 @@ class CustomVariationalLayer(Layer):
         return x
 
 y = CustomVariationalLayer()([x, x_decoded_mean])
+print("x shape=", x.shape, 'type x=', type(x), 'y=', y)  
 vae = Model(x, y)
 vae.compile(optimizer='rmsprop', loss=None)
 
 
 # train the VAE on MNIST digits
 x_train, x_test = load_mnist_images(binarize=True)
-print("xtrain shape=", x_train.shape)        
+print("xtrain shape=", x_train.shape, 'type x_train=', type(x_train))  
+#print('shape training set=',np.array(x_train).shape, 'type x_train=', type(x_train))
+      
         
 
 vae.fit(x_train,
