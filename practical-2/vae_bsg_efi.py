@@ -36,10 +36,10 @@ window_sz = 5 #five words left, five words right
 sfile_path = ''
 
 
-batch_size = 40
+batch_size = 20
 latent_dim = 10
 
-epochs = 100
+epochs = 40
 epsilon_std = 1.0
 window_size=5
 emb_sz=100
@@ -105,9 +105,9 @@ z = Lambda(sampling, output_shape=(emb_sz,))([z_mean, z_log_var])
 # Generator: We generate new data given the latent variable z
 # These are the 'embeddings'
 print('z dim=',z.shape)
-decoder_h = Dense(emb_sz)
+decoder_h = Dense(original_dim, name="decoder")
 # vector fw 
-decoder_mean = Dense(corpus_sz, activation='softmax', name="decoder")
+decoder_mean = Dense(original_dim, activation='softmax')
 h_decoded = decoder_h(z)
 print('h_decoded  dim=',h_decoded.shape)
 x_decoded_mean = decoder_mean(h_decoded)
