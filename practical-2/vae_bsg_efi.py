@@ -63,14 +63,14 @@ x_train_hat = np.reshape(x_train, (flatten_sz,emb_sz_2))
 print('shape x_train_hat=', x_train_hat.shape)
 print('shape X_hot=', X_hot.shape)
 
-x = Input(shape=(emb_sz_2,))
+x = Input(shape=(context_sz,emb_sz_2,))
 x_hot = Input(shape=(original_dim,))
 print('shape x=', x.shape)
 M = Dense(hidden)(x)
 print('shape M =', M.shape)
 r=Dense(hidden, activation='relu')(M)
 print('shape r=', r.shape)
-r=Lambda(lambda u: K.reshape(u,(x_train.shape[0], context_sz,emb_sz*2)))(r)
+#r=Lambda(lambda u: K.reshape(u,(x_train.shape[0], context_sz,emb_sz*2)))(r)
 print('shape r reshape=', r.shape)
 h = Lambda(lambda x: K.sum(x, axis=1), output_shape=lambda s: (s[0], s[2]))(r)
 print('shape h sum=', h.shape)
@@ -186,10 +186,10 @@ print("vae_loss=", vae_loss.shape)
 vae.add_loss(vae_loss)
 vae.compile(optimizer='rmsprop')
 
-vae.fit([x_train_hat, X_hot],
+vae.fit([x_train, X_hot],
         shuffle=True,
         epochs=epochs,
-        batch_size=batch_size)
+        batch_size=None)
 
 
 # build a model to project inputs on the latent space
