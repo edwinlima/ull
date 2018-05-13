@@ -23,7 +23,7 @@ from keras import metrics
 from keras.datasets import mnist
 import tensorflow as tf
 import util
-
+import csv
 
 
 from nltk import sent_tokenize
@@ -39,17 +39,15 @@ sfile_path = ''
 batch_size = 40
 latent_dim = 10
 
-#intermediate_dim = 50
-epochs = 50
+epochs = 100
 epsilon_std = 1.0
 window_size=5
-emb_sz=50
+emb_sz=100
 context_sz=window_size*2
 
 
 tr_word2idx, tr_idx2word, sent_train = util.read_input('./data/test.en')
 tst_word2idx, tst_idx2word,  sent_test = util.read_input('./data/test.en')
-#print(tr_word2idx)
 corpus_dim = len(tr_word2idx)
 original_dim = corpus_dim
 hidden=100
@@ -63,6 +61,7 @@ x_train_hat = np.reshape(x_train, (flatten_sz,emb_sz_2))
 print('shape x_train_hat=', x_train_hat.shape)
 print('shape X_hot=', X_hot.shape)
 
+# ENCODER
 x = Input(shape=(context_sz,emb_sz_2,))
 x_hot = Input(shape=(context_sz,original_dim,))
 
@@ -101,14 +100,14 @@ def sampling(args):
 # note that "output_shape" isn't necessary with the TensorFlow backend
 z = Lambda(sampling, output_shape=(emb_sz,))([z_mean, z_log_var])
 
-
+# Decoder
 # we instantiate these layers separately so as to reuse them later
 # Generator: We generate new data given the latent variable z
 # These are the 'embeddings'
 print('z dim=',z.shape)
 decoder_h = Dense(emb_sz)
 # vector fw 
-decoder_mean = Dense(corpus_sz, activation='softmax')
+decoder_mean = Dense(corpus_sz, activation='softmax', name="decoder")
 h_decoded = decoder_h(z)
 print('h_decoded  dim=',h_decoded.shape)
 x_decoded_mean = decoder_mean(h_decoded)
@@ -118,7 +117,6 @@ print('x_decoded_mean shape=', x_decoded_mean.shape)
 
 x_decoded_mean = Lambda(lambda y: K.repeat_elements(y, context_sz, axis=0))(x_decoded_mean )
 print('x_decoded_mean shape REPEAT=', x_decoded_mean.shape)
-
 
 
 #y = CustomVariationalLayer()([x_hot, x_decoded_mean])
@@ -131,9 +129,8 @@ print('x_decoded_mean shape REPEAT=', x_decoded_mean.shape)
 vae = Model(inputs=[x, x_hot],outputs=x_decoded_mean)
 
 # VAE loss = mse_loss or xent_loss + kl_loss
-print()
+# reshape here to flatten the contexts of each central word
 x_hot_flat=K.reshape(x_hot, (-1,original_dim ))
-#x_hot_flat = tf.reshape(x_hot, [-1, x_hot.shape[2]])
 print("x_hot_flat=",x_hot_flat.size)
 print("x_decoded_mean=",x_decoded_mean.shape)
 reconstruction_loss = original_dim * metrics.binary_crossentropy(x_hot_flat, x_decoded_mean)
@@ -156,6 +153,22 @@ vae.fit([x_train, X_hot],
         shuffle=True,
         epochs=epochs,
         batch_size=None)
+
+
+embeddings_file="embeddings_final_" + str(epochs) + "_" +str(emb_sz) + "_bsg.txt"
+embeddings = vae.get_layer("decoder").get_weights()[0]
+
+with open(embeddings_file, 'w') as csvfile:
+    writer = csv.writer(csvfile, delimiter = ' ')
+    print(embeddings.shape)
+    writer.writerow([embeddings.shape[1], embeddings.shape[0]])
+
+    for i in range(embeddings.shape[1]):
+        word = tr_idx2word[i]
+        embedding = embeddings[:,i]
+        embedding = list(embedding)
+        line = [word] + embedding
+        writer.writerow(line)
 
 
 # build a model to project inputs on the latent space
