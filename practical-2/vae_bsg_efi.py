@@ -36,7 +36,7 @@ window_sz = 5 #five words left, five words right
 sfile_path = ''
 
 
-batch_size = 100
+batch_size = 40
 latent_dim = 10
 
 #intermediate_dim = 50
@@ -147,13 +147,12 @@ class CustomVariationalLayer(Layer):
         # We won't actually use the output.
         return x
 
-def vae_loss(x_hot, x_decoded_mean):
+def calc_vae_loss(x_hot, x_decoded_mean):
     # NOTE: binary_crossentropy expects a batch_size by dim
     # for x and x_decoded_mean, so we MUST flatten these!
     xent_loss = original_dim * metrics.binary_crossentropy(x_hot, x_decoded_mean)
     print('xent_loss shape=', xent_loss.shape)
     kl_loss = - 0.5 * K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
-    #kl_loss = K.repeat_elements(kl_loss, context_sz, axis=0)
     kl_loss = Lambda(lambda y: K.repeat_elements(y, context_sz, axis=0))(kl_loss)
 
     print('kl_loss shape=', kl_loss.shape)
@@ -168,17 +167,30 @@ def vae_loss(x_hot, x_decoded_mean):
 #x_decoded_mean = K.flatten(x_decoded_mean)
 
 vae = Model(inputs=[x, x_hot],outputs=x_decoded_mean)
-#from keras.utils import vis_utils as vizu
-#vizu.plot_model(vae, "ff.png", show_layer_names=False, show_shapes=True)
-vae.compile(optimizer='rmsprop', loss=vae_loss)
 
+# VAE loss = mse_loss or xent_loss + kl_loss
 
-# train the VAE on MNIST digits
-#x_train, x_test = load_mnist_images(binarize=True)
-#print("xtrain shape=", x_train.shape)        
-#x_train=sentences        
-#print('X_hot=', X_hot[0], x_train_hat[0])
-#vae.fit([x_train_hat, X_hot],shuffle=True,epochs=epochs,batch_size=batch_size,validation_data=([x_train_hat,X_hot], None))
+reconstruction_loss = original_dim * metrics.binary_crossentropy(x_hot, x_decoded_mean)
+print("rec_loss=", reconstruction_loss.shape)
+reconstruction_loss *= original_dim
+print("rec_loss=", reconstruction_loss.shape)
+kl_loss = 1 + z_log_var - K.square(z_mean) - K.exp(z_log_var)
+kl_loss = K.sum(kl_loss, axis=-1)
+kl_loss *= -0.5
+kl_loss = Lambda(lambda y: K.repeat_elements(y, context_sz, axis=0))(kl_loss)
+print("kl_loss=", kl_loss.shape)
+
+vae_loss = K.mean(reconstruction_loss + kl_loss)
+print("vae_loss=", vae_loss.shape)
+
+vae.add_loss(vae_loss)
+vae.compile(optimizer='rmsprop')
+
+vae.fit([x_train_hat, X_hot],
+        shuffle=True,
+        epochs=epochs,
+        batch_size=batch_size)
+
 
 # build a model to project inputs on the latent space
 encoder = Model(x, z_mean)
@@ -188,7 +200,7 @@ encoder = Model(x, z_mean)
 
 
 # build a digit generator that can sample from the learned distribution
-decoder_input = Input(shape=(hidden,))
+decoder_input = Input(shape=(emb_sz,))
 _h_decoded = decoder_h(decoder_input)
 _x_decoded_mean = decoder_mean(_h_decoded)
 generator = Model(decoder_input, _x_decoded_mean)
