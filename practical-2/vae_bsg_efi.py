@@ -107,11 +107,14 @@ decoder_h = Dense(emb_sz)
 # vector fw 
 decoder_mean = Dense(corpus_sz, activation='softmax')
 h_decoded = decoder_h(z)
+print('h_decoded  dim=',h_decoded.shape)
 x_decoded_mean = decoder_mean(h_decoded)
 # need to recover the corpus size here
 print('x_decoded_mean shape=', x_decoded_mean.shape)
-x_decoded_mean = K.repeat_elements(x_decoded_mean, context_sz, axis=0)
-print('x_decoded_mean shape=', x_decoded_mean.shape)
+#x_decoded_mean = Lambad(K.repeat_elements(y, context_sz, axis=0))
+
+x_decoded_mean = Lambda(lambda y: K.repeat_elements(y, context_sz, axis=0))(x_decoded_mean )
+print('x_decoded_mean shape REPEAT=', x_decoded_mean.shape)
 
 
 #s=tf.Session()
@@ -129,11 +132,11 @@ class CustomVariationalLayer(Layer):
         #print('shape s=', s.shape, 'x_decoded_mean shape=', x_decoded_mean.shape)
         #x=K.flatten(x)
         #x_decoded_mean = K.flatten(x_decoded_mean)
-        print('shape xxxxxs=', x_hot.shape, 'x_decoded_mean shape=', x_decoded_mean.shape)
+        #print('shape xxxxxs=', x_hot.shape, 'x_decoded_mean shape=', x_decoded_mean.shape)
         xent_loss = original_dim * metrics.binary_crossentropy(x_hot, x_decoded_mean)
         kl_loss = - 0.5 * K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
         kl_loss = K.repeat_elements(kl_loss, context_sz, axis=0)
-        print("shape kl_loss=",kl_loss.shape)
+        #print("shape kl_loss=",kl_loss.shape)
         return K.mean(xent_loss + kl_loss)
 
     def call(self, inputs):
@@ -144,28 +147,38 @@ class CustomVariationalLayer(Layer):
         # We won't actually use the output.
         return x
 
+def vae_loss(x_hot, x_decoded_mean):
+    # NOTE: binary_crossentropy expects a batch_size by dim
+    # for x and x_decoded_mean, so we MUST flatten these!
+    xent_loss = original_dim * metrics.binary_crossentropy(x_hot, x_decoded_mean)
+    print('xent_loss shape=', xent_loss.shape)
+    kl_loss = - 0.5 * K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
+    #kl_loss = K.repeat_elements(kl_loss, context_sz, axis=0)
+    kl_loss = Lambda(lambda y: K.repeat_elements(y, context_sz, axis=0))(kl_loss)
 
-y = CustomVariationalLayer()([x_hot, x_decoded_mean])
-print('shape x=', x.shape, 'x_decoded_mean shape=', x_decoded_mean.shape, 'type x=', type(x), 'type x_d_mean=', type(x_decoded_mean))
+    print('kl_loss shape=', kl_loss.shape)
+
+    return xent_loss + kl_loss
+
+#y = CustomVariationalLayer()([x_hot, x_decoded_mean])
+#print('shape x=', x.shape, 'x_decoded_mean shape=', x_decoded_mean.shape, 'type x=', type(x), 'type x_d_mean=', type(x_decoded_mean))
 #_hat=Reshape([context_sz,emb_sz*2])(x)
 #x = Lambda(lambda v: K.batch_flatten(v))(x)
 #x_decoded_mean  = Lambda(lambda v: K.batch_flatten(v))(x_decoded_mean  )
 #x_decoded_mean = K.flatten(x_decoded_mean)
 
-vae = Model(inputs=[x, x_hot], outputs=y)
-vae.compile(optimizer='rmsprop', loss=None)
+vae = Model(inputs=[x, x_hot],outputs=x_decoded_mean)
+#from keras.utils import vis_utils as vizu
+#vizu.plot_model(vae, "ff.png", show_layer_names=False, show_shapes=True)
+vae.compile(optimizer='rmsprop', loss=vae_loss)
 
 
 # train the VAE on MNIST digits
 #x_train, x_test = load_mnist_images(binarize=True)
 #print("xtrain shape=", x_train.shape)        
 #x_train=sentences        
-
-vae.fit([x_train_hat, X_hot],
-        shuffle=True,
-        epochs=epochs,
-        batch_size=batch_size)#,
-        #validation_data=(x_test, None))
+#print('X_hot=', X_hot[0], x_train_hat[0])
+#vae.fit([x_train_hat, X_hot],shuffle=True,epochs=epochs,batch_size=batch_size,validation_data=([x_train_hat,X_hot], None))
 
 # build a model to project inputs on the latent space
 encoder = Model(x, z_mean)
