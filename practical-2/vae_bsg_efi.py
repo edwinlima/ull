@@ -111,6 +111,7 @@ x_decoded_mean = decoder_mean(h_decoded)
 # need to recover the corpus size here
 print('x_decoded_mean shape=', x_decoded_mean.shape)
 x_decoded_mean = K.repeat_elements(x_decoded_mean, context_sz, axis=0)
+print('x_decoded_mean shape=', x_decoded_mean.shape)
 
 
 #s=tf.Session()
@@ -121,22 +122,24 @@ class CustomVariationalLayer(Layer):
         self.is_placeholder = True
         super(CustomVariationalLayer, self).__init__(**kwargs)
 
-    def vae_loss(self, x, x_decoded_mean):
+    def vae_loss(self, x_hot, x_decoded_mean):
         #K.reshape(relu,(-1,window_size*2+1,original_dim))
         #x=K.sum(x, axis=1)
         #s = Lambda(lambda f: K.sum(f, axis=1))(x)
         #print('shape s=', s.shape, 'x_decoded_mean shape=', x_decoded_mean.shape)
         #x=K.flatten(x)
         #x_decoded_mean = K.flatten(x_decoded_mean)
-        print('shape xxxxxs=', x.shape, 'x_decoded_mean shape=', x_decoded_mean.shape)
-        xent_loss = original_dim * metrics.binary_crossentropy(x, x_decoded_mean)
+        print('shape xxxxxs=', x_hot.shape, 'x_decoded_mean shape=', x_decoded_mean.shape)
+        xent_loss = original_dim * metrics.binary_crossentropy(x_hot, x_decoded_mean)
         kl_loss = - 0.5 * K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
+        kl_loss = K.repeat_elements(kl_loss, context_sz, axis=0)
+        print("shape kl_loss=",kl_loss.shape)
         return K.mean(xent_loss + kl_loss)
 
     def call(self, inputs):
-        x = inputs[0]
+        x_hot = inputs[0]
         x_decoded_mean = inputs[1]
-        loss = self.vae_loss(x, x_decoded_mean)
+        loss = self.vae_loss(x_hot, x_decoded_mean)
         self.add_loss(loss, inputs=inputs)
         # We won't actually use the output.
         return x
