@@ -131,19 +131,16 @@ def get_features(sentences, word2idx, window_size, emb_sz):
 
                u_all = np.repeat(u, padding, axis=0)
                u_all_hot =  np.repeat(u_hot, padding, axis=0)
-               print(u_all_hot.shape)
                temp = np.vstack((temp, u_all))
                temp_hot = np.vstack((temp_hot, u_all_hot))
 
-            print('temp_new=',temp_hot.shape)
-        
+
             #w_x_hot = onehotencoding(word2idx[w_x], word2idx)
 
             X_hot.append(temp_hot)
             X.append(temp)
             
-    X_hot=np.stack(X_hot)
-    print('X_hot=',X_hot.shape)
+    X_hot=np.vstack(X_hot)
     X=np.stack(X)
     return X, X_hot
 
