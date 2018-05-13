@@ -92,9 +92,13 @@ def get_features(sentences, word2idx, window_size, emb_sz):
     #sentences: set of sentences
     #word2idx dict with the word index of the whole corpus
     #window size: size of the context
-    #Return: X, Y word pairs
+    #Return: X: concatenated context and central word deterministic embeddings,
+    #           shape(central_words x window_size*2 x emb_sz*2)
+    #        X_hot: context hot vectors shape (central_words*window_size*2 x vocab_size)
+
     X_hot = []
     X=[]
+
     R = np.random.rand(len(word2idx),emb_sz)
     for sentence in sentences:
         #print('# sentences=',len(sentences))
@@ -102,7 +106,8 @@ def get_features(sentences, word2idx, window_size, emb_sz):
         for idx, w_x in enumerate(sentence):
             pairs = []
             #temp = np.zeros(window_size*2, emb_sz*2)
-            temp = [] 
+            temp = []
+            temp_hot = []
             #print('w=', w_x, len(sentence))
             
             for i, w_y in enumerate(sentence[max(idx - window_size, 0) :\
@@ -110,8 +115,11 @@ def get_features(sentences, word2idx, window_size, emb_sz):
 
                 if idx != i: 
                     temp.append(np.hstack((R[word2idx[w_x]], R[word2idx[w_y]])))
-            #print(len(temp))
+                    temp_hot.append(onehotencoding(word2idx[w_y], word2idx))
+
             temp = np.array(temp)
+            temp_hot = np.array(temp_hot)
+
             #print('temp=',temp.shape)
             # pad if the contexts is smaller than window size
             if temp.shape[0] < window_size*2 :
@@ -119,13 +127,19 @@ def get_features(sentences, word2idx, window_size, emb_sz):
                padding =  window_size*2 - temp.shape[0] 
                #print("padding=", padding)
                u=[np.hstack((R[word2idx[w_x]],R[word2idx['<null>']]))]
+               u_hot = [onehotencoding(word2idx['<null>'], word2idx)]
+
                u_all = np.repeat(u, padding, axis=0)
-               #print(u_all.shape)
+               u_all_hot =  np.repeat(u_hot, padding, axis=0)
+               print(u_all_hot.shape)
                temp = np.vstack((temp, u_all))
-            #print('temp_new=',temp.shape)
+               temp_hot = np.vstack((temp_hot, u_all_hot))
+
+            print('temp_new=',temp_hot.shape)
         
-            w_x_hot = onehotencoding(word2idx[w_x], word2idx)
-            X_hot.append(w_x_hot)
+            #w_x_hot = onehotencoding(word2idx[w_x], word2idx)
+
+            X_hot.append(temp_hot)
             X.append(temp)
             
     X_hot=np.stack(X_hot)
