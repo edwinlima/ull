@@ -47,7 +47,7 @@ emb_sz=50
 context_sz=window_size*2
 
 
-tr_word2idx, tr_idx2word, sent_train = util.read_input('./data/dev.en') 
+tr_word2idx, tr_idx2word, sent_train = util.read_input('./data/test.en')
 tst_word2idx, tst_idx2word,  sent_test = util.read_input('./data/test.en')
 #print(tr_word2idx)
 corpus_dim = len(tr_word2idx)
@@ -64,8 +64,11 @@ print('shape x_train_hat=', x_train_hat.shape)
 print('shape X_hot=', X_hot.shape)
 
 x = Input(shape=(context_sz,emb_sz_2,))
-x_hot = Input(shape=(original_dim,))
+x_hot = Input(shape=(context_sz,original_dim,))
+
 print('shape x=', x.shape)
+print('shape x_hot=', x_hot.shape)
+
 M = Dense(hidden)(x)
 print('shape M =', M.shape)
 r=Dense(hidden, activation='relu')(M)
@@ -117,47 +120,6 @@ x_decoded_mean = Lambda(lambda y: K.repeat_elements(y, context_sz, axis=0))(x_de
 print('x_decoded_mean shape REPEAT=', x_decoded_mean.shape)
 
 
-#s=tf.Session()
-
-# Custom loss layer
-class CustomVariationalLayer(Layer):
-    def __init__(self, **kwargs):
-        self.is_placeholder = True
-        super(CustomVariationalLayer, self).__init__(**kwargs)
-
-    def vae_loss(self, x_hot, x_decoded_mean):
-        #K.reshape(relu,(-1,window_size*2+1,original_dim))
-        #x=K.sum(x, axis=1)
-        #s = Lambda(lambda f: K.sum(f, axis=1))(x)
-        #print('shape s=', s.shape, 'x_decoded_mean shape=', x_decoded_mean.shape)
-        #x=K.flatten(x)
-        #x_decoded_mean = K.flatten(x_decoded_mean)
-        #print('shape xxxxxs=', x_hot.shape, 'x_decoded_mean shape=', x_decoded_mean.shape)
-        xent_loss = original_dim * metrics.binary_crossentropy(x_hot, x_decoded_mean)
-        kl_loss = - 0.5 * K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
-        kl_loss = K.repeat_elements(kl_loss, context_sz, axis=0)
-        #print("shape kl_loss=",kl_loss.shape)
-        return K.mean(xent_loss + kl_loss)
-
-    def call(self, inputs):
-        x_hot = inputs[0]
-        x_decoded_mean = inputs[1]
-        loss = self.vae_loss(x_hot, x_decoded_mean)
-        self.add_loss(loss, inputs=inputs)
-        # We won't actually use the output.
-        return x
-
-def calc_vae_loss(x_hot, x_decoded_mean):
-    # NOTE: binary_crossentropy expects a batch_size by dim
-    # for x and x_decoded_mean, so we MUST flatten these!
-    xent_loss = original_dim * metrics.binary_crossentropy(x_hot, x_decoded_mean)
-    print('xent_loss shape=', xent_loss.shape)
-    kl_loss = - 0.5 * K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
-    kl_loss = Lambda(lambda y: K.repeat_elements(y, context_sz, axis=0))(kl_loss)
-
-    print('kl_loss shape=', kl_loss.shape)
-
-    return xent_loss + kl_loss
 
 #y = CustomVariationalLayer()([x_hot, x_decoded_mean])
 #print('shape x=', x.shape, 'x_decoded_mean shape=', x_decoded_mean.shape, 'type x=', type(x), 'type x_d_mean=', type(x_decoded_mean))
@@ -169,15 +131,19 @@ def calc_vae_loss(x_hot, x_decoded_mean):
 vae = Model(inputs=[x, x_hot],outputs=x_decoded_mean)
 
 # VAE loss = mse_loss or xent_loss + kl_loss
-
-reconstruction_loss = original_dim * metrics.binary_crossentropy(x_hot, x_decoded_mean)
+print()
+x_hot_flat=K.reshape(x_hot, (-1,original_dim ))
+#x_hot_flat = tf.reshape(x_hot, [-1, x_hot.shape[2]])
+print("x_hot_flat=",x_hot_flat.size)
+print("x_decoded_mean=",x_decoded_mean.shape)
+reconstruction_loss = original_dim * metrics.binary_crossentropy(x_hot_flat, x_decoded_mean)
 print("rec_loss=", reconstruction_loss.shape)
 reconstruction_loss *= original_dim
 print("rec_loss=", reconstruction_loss.shape)
 kl_loss = 1 + z_log_var - K.square(z_mean) - K.exp(z_log_var)
 kl_loss = K.sum(kl_loss, axis=-1)
 kl_loss *= -0.5
-kl_loss = Lambda(lambda y: K.repeat_elements(y, context_sz, axis=0))(kl_loss)
+kl_loss =  K.repeat_elements(kl_loss, context_sz, axis=0)
 print("kl_loss=", kl_loss.shape)
 
 vae_loss = K.mean(reconstruction_loss + kl_loss)
