@@ -61,6 +61,8 @@ emb_sz_2 = emb_sz*2
 #x_test = get_features(sent_test, tst_word2idx, window_size, emb_sz)
 x_train_hat = np.reshape(x_train, (flatten_sz,emb_sz_2))
 print('shape x_train_hat=', x_train_hat.shape)
+print('shape X_hot=', X_hot.shape)
+
 x = Input(shape=(emb_sz_2,))
 x_hot = Input(shape=(original_dim,))
 print('shape x=', x.shape)
@@ -108,6 +110,7 @@ h_decoded = decoder_h(z)
 x_decoded_mean = decoder_mean(h_decoded)
 # need to recover the corpus size here
 print('x_decoded_mean shape=', x_decoded_mean.shape)
+x_decoded_mean = K.repeat_elements(x_decoded_mean, context_sz, axis=0)
 
 
 #s=tf.Session()
@@ -133,7 +136,6 @@ class CustomVariationalLayer(Layer):
     def call(self, inputs):
         x = inputs[0]
         x_decoded_mean = inputs[1]
-        x_decoded_mean = K.repeat_elements(x_decoded_mean, context_sz, axis=0)
         loss = self.vae_loss(x, x_decoded_mean)
         self.add_loss(loss, inputs=inputs)
         # We won't actually use the output.
