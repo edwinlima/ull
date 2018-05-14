@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sun Dec 17 17:55:33 2017
+Created on Sun May 13 17:55:33 2018
 
-@author: Eigenaar
+@author: Edwin Lima, Efi Athieniti
 """
 
 '''This script demonstrates how to build a variational autoencoder with Keras.
@@ -33,15 +33,17 @@ from keras.layers import Dense
 #from keras.optimizers import SGD
 import numpy as np
 from nltk.corpus import stopwords
+from time import strftime, gmtime
 window_sz = 5 #five words left, five words right
 stopwords = set(stopwords.words('english'))
 sfile_path = ''
+
 def read_input(fn):
+    print(strftime("%Y-%m-%d %H:%M:%S", gmtime()), " Reading input sentences..")
+
     with open(fn, 'r') as content_file:
         content = content_file.read()
-    #print(content)
     sentences = sent_tokenize(content)
-    #print(sentences)
     punctuation = ['.', ',', '"', "'", '?', '!', ':', ';', '(', ')', '[', ']', '{', '}', '\n']
     
     sentences_tokens = []
@@ -61,8 +63,9 @@ def read_input(fn):
     corpus = set(corpus+reserved)
     print('len corpus=', len(corpus))
     word2idx, idx2word=encode_corpus(corpus)
+    print(strftime("%Y-%m-%d %H:%M:%S", gmtime()),"Finished reading input sentences")
+
     return word2idx, idx2word, sentences_tokens
-#print(corpus)
 
 def encode_corpus(corpus):
     word2idx = defaultdict(list)
@@ -99,6 +102,7 @@ def get_features(sentences, word2idx, window_size, emb_sz):
     X_hot = []
     X=[]
 
+    print(strftime("%Y-%m-%d %H:%M:%S", gmtime()),"Creating features..")
     R = np.random.rand(len(word2idx),emb_sz)
     for sentence in sentences:
         #print('# sentences=',len(sentences))
@@ -142,27 +146,10 @@ def get_features(sentences, word2idx, window_size, emb_sz):
             
     X_hot=np.stack(X_hot)
     X=np.stack(X)
+    print(strftime("%Y-%m-%d %H:%M:%S", gmtime()),"Finished creating features")
+
     return X, X_hot
 
 
-batch_size = 100
-latent_dim = 10
-intermediate_dim = 50
-epochs = 50
-epsilon_std = 1.0
-window_size=5
-emb_sz = 50
 
 
-#tr_word2idx, tr_idx2word, sent_train = read_input('./data/dev.en') 
-#tst_word2idx, tst_idx2word,  sent_test = read_input('./data/test.en')
-#print(tr_word2idx)
-#corpus_dim = len(tr_word2idx)
-#original_dim = corpus_dim
-#flatten_sz = (window_size*2+1)*original_dim
-#context_sz=window_size*2+1
-#
-#x_train  = get_features(sent_train, tr_word2idx, window_size, emb_sz)
-#print('shape training set=',np.array(x_train).shape)
-
-#x_test = get_features(sent_test, tst_word2idx, window_size, emb_sz)
