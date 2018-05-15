@@ -15,12 +15,14 @@ Created on Sun May 13 17:55:33 2018
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import norm
+from sklearn.preprocessing import OneHotEncoder
 
 from keras.layers import Input, Dense, Lambda, Layer, Reshape
 from keras.models import Model
 from keras import backend as K
 from keras import metrics
 from keras.datasets import mnist
+from keras.utils import to_categorical
 import tensorflow as tf
 import util
 import csv
@@ -34,6 +36,7 @@ import keras
 import numpy as np
 window_sz = 5 #five words left, five words right
 
+
 sfile_path = ''
 
 
@@ -41,6 +44,7 @@ dataset = "hansards"
 dataset = "test"
 
 dataset = "hansards"
+
 
 if dataset == "hansards":# hansards
     batch_size = 8
@@ -80,7 +84,7 @@ print('shape X_hot=', X_hot.shape)
 
 # ENCODER
 x = Input(shape=(context_sz,emb_sz_2,))
-x_hot = Input(shape=(context_sz,))
+x_hot = Input(shape=(context_sz,), dtype='int32')
 
 print('shape x=', x.shape)
 print('shape x_hot=', x_hot.shape)
@@ -139,9 +143,18 @@ vae = Model(inputs=[x, x_hot],outputs=x_decoded_mean)
 
 # VAE loss = mse_loss or xent_loss + kl_loss
 # reshape here to flatten the contexts of each central word
-x_hot_flat=K.reshape(x_hot, (-1,original_dim ))
+x_hot
+#x_hot_flat=K.reshape(x_hot, (-1,original_dim ))
+#x_hot_flat=K.reshape(x_hot, (-1,))
+x_hot_flat=K.flatten(x_hot)
+print("shape x_hot=", x_hot_flat.shape)
+
+#enc = OneHotEncoder(sparse=False) # Key here is sparse=False!
+#x_hot_flat_2 = enc.fit_transform(x_hot_flat)
+x_hot_flat_2 = K.one_hot(x_hot_flat, corpus_sz)
+
 print("x_decoded_mean=",x_decoded_mean.shape)
-reconstruction_loss = original_dim * metrics.binary_crossentropy(x_hot_flat, x_decoded_mean)
+reconstruction_loss = original_dim * metrics.binary_crossentropy(x_hot_flat_2, x_decoded_mean)
 print("rec_loss=", reconstruction_loss.shape)
 reconstruction_loss *= original_dim
 print("rec_loss=", reconstruction_loss.shape)
