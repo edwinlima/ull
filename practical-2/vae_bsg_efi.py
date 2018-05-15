@@ -36,32 +36,41 @@ window_sz = 5 #five words left, five words right
 
 sfile_path = ''
 
-
-batch_size = 20
-latent_dim = 10
-
-epochs = 40
+# hansards
+batch_size = 40
+epochs = 100
 epsilon_std = 1.0
 window_size=5
 emb_sz=100
 context_sz=window_size*2
+hidden=100
+most_common = 6000
+
+# test
+batch_size = 4
+epochs = 30
+epsilon_std = 1.0
+window_size=5
+emb_sz=100
+context_sz=window_size*2
+hidden=100
+most_common = 1500
 
 
-tr_word2idx, tr_idx2word, sent_train = util.read_input('./data/hansards/training.en')
-#tr_word2idx, tr_idx2word, sent_train = util.read_input('./data/test.en')
 
+#tr_word2idx, tr_idx2word, sent_train = util.read_input('./data/hansards/training.en')
+
+tr_word2idx, tr_idx2word, sent_train = util.read_input('./data/test.en', most_common=most_common)
 tst_word2idx, tst_idx2word,  sent_test = util.read_input('./data/test.en')
 corpus_dim = len(tr_word2idx)
 original_dim = corpus_dim
-hidden=100
 x_train, X_hot  = util.get_features(sent_train, tr_word2idx, window_size, emb_sz)
 corpus_sz = len(tr_word2idx)
 flatten_sz = x_train.shape[0]* x_train.shape[1]
 emb_sz_2 = emb_sz*2
 
-#x_test = get_features(sent_test, tst_word2idx, window_size, emb_sz)
-x_train_hat = np.reshape(x_train, (flatten_sz,emb_sz_2))
-print('shape x_train_hat=', x_train_hat.shape)
+#x_train_hat = np.reshape(x_train, (flatten_sz,emb_sz_2))
+#print('shape x_train_hat=', x_train_hat.shape)
 print('shape X_hot=', X_hot.shape)
 
 # ENCODER
@@ -82,9 +91,9 @@ print('shape h sum=', h.shape)
 #h=K.transpose(h)
 #h = Lambda(lambda x: K.transpose(x))(h)
 #print('shape h transpose=', h.shape)
-z_mean = Dense(emb_sz)(h) #L
+z_mean = Dense(emb_sz)(h) # L
 print('shape z_mean=', z_mean.shape)
-z_log_var = Dense(emb_sz, activation='softplus')(h) #S
+z_log_var = Dense(emb_sz, activation='softplus')(h) # S
 print('shape z_log_var=', z_log_var.shape)
 
 
@@ -116,18 +125,10 @@ print('h_decoded  dim=',h_decoded.shape)
 x_decoded_mean = decoder_mean(h_decoded)
 # need to recover the corpus size here
 print('x_decoded_mean shape=', x_decoded_mean.shape)
-#x_decoded_mean = Lambad(K.repeat_elements(y, context_sz, axis=0))
 
 x_decoded_mean = Lambda(lambda y: K.repeat_elements(y, context_sz, axis=0))(x_decoded_mean )
 print('x_decoded_mean shape REPEAT=', x_decoded_mean.shape)
 
-
-#y = CustomVariationalLayer()([x_hot, x_decoded_mean])
-#print('shape x=', x.shape, 'x_decoded_mean shape=', x_decoded_mean.shape, 'type x=', type(x), 'type x_d_mean=', type(x_decoded_mean))
-#_hat=Reshape([context_sz,emb_sz*2])(x)
-#x = Lambda(lambda v: K.batch_flatten(v))(x)
-#x_decoded_mean  = Lambda(lambda v: K.batch_flatten(v))(x_decoded_mean  )
-#x_decoded_mean = K.flatten(x_decoded_mean)
 
 vae = Model(inputs=[x, x_hot],outputs=x_decoded_mean)
 
@@ -140,6 +141,9 @@ print("rec_loss=", reconstruction_loss.shape)
 reconstruction_loss *= original_dim
 print("rec_loss=", reconstruction_loss.shape)
 kl_loss = 1 + z_log_var - K.square(z_mean) - K.exp(z_log_var)
+print("z_log_var=",z_log_var.shape)
+print("K.square(z_mean)=",K.square(z_mean).shape)
+
 kl_loss = K.sum(kl_loss, axis=-1)
 kl_loss *= -0.5
 kl_loss =  K.repeat_elements(kl_loss, context_sz, axis=0)
@@ -157,21 +161,11 @@ vae.fit([x_train, X_hot],
         batch_size=None)
 
 
-embeddings_file="embeddings_final_" + str(epochs) + "_" +str(emb_sz) + "_hansards_bsg.txt"
+
+embeddings_file = "./output/embeddings_vocab_%s_ep_%s_emb_%s_hid_%s_%s_%s_test_bsg.txt"%(corpus_dim,epochs,emb_sz,hidden,batch_size, most_common)
 embeddings = vae.get_layer("decoder").get_weights()[0]
 
-with open(embeddings_file, 'w') as csvfile:
-    writer = csv.writer(csvfile, delimiter = ' ')
-    print(embeddings.shape)
-    writer.writerow([embeddings.shape[1], embeddings.shape[0]])
-
-    for i in range(embeddings.shape[1]):
-        word = tr_idx2word[i]
-        embedding = embeddings[:,i]
-        embedding = list(embedding)
-        line = [word] + embedding
-        writer.writerow(line)
-
+util.save_embeddings(embeddings_file, embeddings, tr_idx2word)
 
 # build a model to project inputs on the latent space
 encoder = Model(x, z_mean)
