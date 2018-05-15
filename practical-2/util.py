@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sun Dec 17 17:55:33 2017
+Created on Sun May 13 17:55:33 2018
 
-@author: Eigenaar
+@author: Edwin Lima, Efi Athieniti
 """
 
 '''This script demonstrates how to build a variational autoencoder with Keras.
@@ -12,7 +12,7 @@ Created on Sun Dec 17 17:55:33 2017
  - Auto-Encoding Variational Bayes
    https://arxiv.org/abs/1312.6114
 '''
-import numpy as np
+
 import matplotlib.pyplot as plt
 from scipy.stats import norm
 
@@ -28,25 +28,28 @@ import tensorflow as tf
 from nltk import sent_tokenize
 from collections import defaultdict
 import keras
-from keras.models import Sequential
-from keras.layers import Dense
-#from keras.optimizers import SGD
+
 import numpy as np
+import csv
 from nltk.corpus import stopwords
+from time import strftime, gmtime
+from collections import Counter
+
 window_sz = 5 #five words left, five words right
 stopwords = set(stopwords.words('english'))
 sfile_path = ''
-def read_input(fn):
+
+def read_input(fn, most_common=None):
+    print(strftime("%Y-%m-%d %H:%M:%S", gmtime()), " Reading input sentences..")
+
     with open(fn, 'r') as content_file:
         content = content_file.read()
-    #print(content)
     sentences = sent_tokenize(content)
-    #print(sentences)
     punctuation = ['.', ',', '"', "'", '?', '!', ':', ';', '(', ')', '[', ']', '{', '}', '\n']
     
     sentences_tokens = []
     corpus = []
-    reserved = ['<null>' ,'<unkown>']
+    reserved = ['<null>' ,'<unk>']
     for sentence in sentences:
         #s= [w for w in sentence.split() if w not in punctuation]
         s=[]
@@ -58,11 +61,23 @@ def read_input(fn):
 
         sentences_tokens.append(s)
         corpus = corpus + s
-    corpus = set(corpus+reserved)
-    print('len corpus=', len(corpus))
+    counts = Counter(corpus)
+    print('len corpus=', len(set(corpus)))
+    print('provinces',counts['provinces'])
+    if most_common:
+        corpus = set(map(lambda x: x[0], counts.most_common(most_common)))
+    else:
+        corpus = set(corpus)
+    print("updated corpus len", len(corpus))
+
+    corpus = corpus.union(set(reserved))
+    print("updated corpus len", len(corpus))
+
     word2idx, idx2word=encode_corpus(corpus)
+
+    print(strftime("%Y-%m-%d %H:%M:%S", gmtime()),"Finished reading input sentences")
+
     return word2idx, idx2word, sentences_tokens
-#print(corpus)
 
 def encode_corpus(corpus):
     word2idx = defaultdict(list)
@@ -99,41 +114,41 @@ def get_features(sentences, word2idx, window_size, emb_sz):
     X_hot = []
     X=[]
 
+    print(strftime("%Y-%m-%d %H:%M:%S", gmtime()),"Creating features..")
     R = np.random.rand(len(word2idx),emb_sz)
     for sentence in sentences:
         #print('# sentences=',len(sentences))
         # for each central word
         for idx, w_x in enumerate(sentence):
-            pairs = []
-            #temp = np.zeros(window_size*2, emb_sz*2)
-            temp = []
-            temp_hot = []
-            #print('w=', w_x, len(sentence))
-            
-            for i, w_y in enumerate(sentence[max(idx - window_size, 0) :\
-                                    min(idx + window_size, len(sentence))]) :
+            if w_x in word2idx:
+                temp = []
+                temp_hot = []
 
-                if idx != i: 
-                    temp.append(np.hstack((R[word2idx[w_x]], R[word2idx[w_y]])))
-                    temp_hot.append(onehotencoding(word2idx[w_y], word2idx))
+                for i, w_y in enumerate(sentence[max(idx - window_size, 0) :\
+                                        min(idx + window_size, len(sentence))]) :
 
-            temp = np.array(temp)
-            temp_hot = np.array(temp_hot)
+                    if i != idx:
+                        word_y = w_y
+                        if w_y not in word2idx:  # check if word in dict
+                            #print(w_y,"word mapped to unk")
+                            word_y = '<unk>'
+                        temp.append(np.hstack((R[word2idx[w_x]], R[word2idx[word_y]])))
+                        temp_hot.append(onehotencoding(word2idx[word_y], word2idx))
+                temp = np.array(temp)
+                temp_hot = np.array(temp_hot)
 
-            #print('temp=',temp.shape)
-            # pad if the contexts is smaller than window size
-            if temp.shape[0] < window_size*2 :
-               #print("less=",temp.shape)
-               padding =  window_size*2 - temp.shape[0] 
-               #print("padding=", padding)
-               u=[np.hstack((R[word2idx[w_x]],R[word2idx['<null>']]))]
-               u_hot = [onehotencoding(word2idx['<null>'], word2idx)]
+                #print('temp=',temp.shape)
+                # pad if the contexts is smaller than window size
+                if temp.shape[0] < window_size*2 :
+                   padding =  window_size*2 - temp.shape[0]
+                   u=[np.hstack((R[word2idx[w_x]],R[word2idx['<null>']]))]
+                   u_hot = [onehotencoding(word2idx['<null>'], word2idx)]
 
-               u_all = np.repeat(u, padding, axis=0)
-               u_all_hot =  np.repeat(u_hot, padding, axis=0)
-               if len(temp)>0:
-                   temp = np.vstack((temp, u_all))
-                   temp_hot = np.vstack((temp_hot, u_all_hot))
+                   u_all = np.repeat(u, padding, axis=0)
+                   u_all_hot =  np.repeat(u_hot, padding, axis=0)
+                   if len(temp)>0:
+                       temp = np.vstack((temp, u_all))
+                       temp_hot = np.vstack((temp_hot, u_all_hot))
 
 
             if len(temp)>0:
@@ -142,27 +157,21 @@ def get_features(sentences, word2idx, window_size, emb_sz):
             
     X_hot=np.stack(X_hot)
     X=np.stack(X)
+    print(strftime("%Y-%m-%d %H:%M:%S", gmtime()),"Finished creating features")
+
     return X, X_hot
 
 
-batch_size = 100
-latent_dim = 10
-intermediate_dim = 50
-epochs = 50
-epsilon_std = 1.0
-window_size=5
-emb_sz = 50
+def save_embeddings(embeddings_file, embeddings, idx2word):
+    with open(embeddings_file, 'w') as csvfile:
+        writer = csv.writer(csvfile, delimiter=' ')
+        print(embeddings.shape)
+        writer.writerow([embeddings.shape[1], embeddings.shape[0]])
 
+        for i in range(embeddings.shape[1]):
+            word = idx2word[i]
+            embedding = embeddings[:,i]
+            embedding = list(embedding)
+            line = [word] + embedding
+            writer.writerow(line)
 
-#tr_word2idx, tr_idx2word, sent_train = read_input('./data/dev.en') 
-#tst_word2idx, tst_idx2word,  sent_test = read_input('./data/test.en')
-#print(tr_word2idx)
-#corpus_dim = len(tr_word2idx)
-#original_dim = corpus_dim
-#flatten_sz = (window_size*2+1)*original_dim
-#context_sz=window_size*2+1
-#
-#x_train  = get_features(sent_train, tr_word2idx, window_size, emb_sz)
-#print('shape training set=',np.array(x_train).shape)
-
-#x_test = get_features(sent_test, tst_word2idx, window_size, emb_sz)
