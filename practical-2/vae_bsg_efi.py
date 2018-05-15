@@ -46,7 +46,7 @@ emb_sz=100
 context_sz=window_size*2
 
 
-tr_word2idx, tr_idx2word, sent_train = util.read_input('./data/test.en')
+tr_word2idx, tr_idx2word, sent_train = util.read_input('./data/hansards/training_10kL.txt')
 tst_word2idx, tst_idx2word,  sent_test = util.read_input('./data/test.en')
 corpus_dim = len(tr_word2idx)
 original_dim = corpus_dim
@@ -131,7 +131,7 @@ vae = Model(inputs=[x, x_hot],outputs=x_decoded_mean)
 # VAE loss = mse_loss or xent_loss + kl_loss
 # reshape here to flatten the contexts of each central word
 x_hot_flat=K.reshape(x_hot, (-1,original_dim ))
-print("x_hot_flat=",x_hot_flat.size)
+#print("x_hot_flat=",x_hot_flat.size)
 print("x_decoded_mean=",x_decoded_mean.shape)
 reconstruction_loss = original_dim * metrics.binary_crossentropy(x_hot_flat, x_decoded_mean)
 print("rec_loss=", reconstruction_loss.shape)
