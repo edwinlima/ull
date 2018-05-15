@@ -36,33 +36,36 @@ window_sz = 5 #five words left, five words right
 
 sfile_path = ''
 
-# hansards
-batch_size = 40
-epochs = 100
+
+dataset = "hansards"
+dataset = "test"
+
+dataset = "hansards"
+
+if dataset == "hansards":# hansards
+    batch_size = 8
+    epochs = 50
+    emb_sz=100
+    hidden=100
+    most_common = 7000
+   # filename = './data/hansards/training_25kL.txt'
+    filename = './data/hansards/training_5kL.txt'
+else:
+    batch_size = 8
+    epochs = 40
+    emb_sz=100
+    hidden=100
+    most_common = 1550
+    filename = './data/test.en'
+
+
 epsilon_std = 1.0
 window_size=5
-emb_sz=100
+
 context_sz=window_size*2
-hidden=100
-most_common = 6000
 
-# test
-batch_size = 4
-epochs = 30
-epsilon_std = 1.0
-window_size=5
-emb_sz=100
-context_sz=window_size*2
-hidden=100
-most_common = 1500
+tr_word2idx, tr_idx2word, sent_train = util.read_input(filename, most_common=most_common)
 
-
-
-tr_word2idx, tr_idx2word, sent_train = util.read_input('./data/hansards/training_10kL.txt')
-
-#tr_word2idx, tr_idx2word, sent_train = util.read_input('./data/hansards/training.en')
-
-tr_word2idx, tr_idx2word, sent_train = util.read_input('./data/test.en', most_common=most_common)
 tst_word2idx, tst_idx2word,  sent_test = util.read_input('./data/test.en')
 corpus_dim = len(tr_word2idx)
 original_dim = corpus_dim
@@ -77,7 +80,7 @@ print('shape X_hot=', X_hot.shape)
 
 # ENCODER
 x = Input(shape=(context_sz,emb_sz_2,))
-x_hot = Input(shape=(context_sz,original_dim,))
+x_hot = Input(shape=(context_sz,))
 
 print('shape x=', x.shape)
 print('shape x_hot=', x_hot.shape)
@@ -160,11 +163,11 @@ vae.compile(optimizer='rmsprop')
 vae.fit([x_train, X_hot],
         shuffle=True,
         epochs=epochs,
-        batch_size=None)
+        batch_size=batch_size)
 
 
 
-embeddings_file = "./output/embeddings_vocab_%s_ep_%s_emb_%s_hid_%s_%s_%s_test_bsg.txt"%(corpus_dim,epochs,emb_sz,hidden,batch_size, most_common)
+embeddings_file = "./output/embeddings_vocab_%s_ep_%s_emb_%s_hid_%s_%s_%s_test_%s_bsg.txt"%(corpus_dim,epochs,emb_sz,hidden,batch_size, dataset,most_common)
 embeddings = vae.get_layer("decoder").get_weights()[0]
 
 util.save_embeddings(embeddings_file, embeddings, tr_idx2word)

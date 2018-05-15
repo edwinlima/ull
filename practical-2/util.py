@@ -50,6 +50,8 @@ def read_input(fn, most_common=None):
     sentences_tokens = []
     corpus = []
     reserved = ['<null>' ,'<unk>']
+    print(strftime("%Y-%m-%d %H:%M:%S", gmtime()), "File read")
+
     for sentence in sentences:
         #s= [w for w in sentence.split() if w not in punctuation]
         s=[]
@@ -63,7 +65,8 @@ def read_input(fn, most_common=None):
         corpus = corpus + s
     counts = Counter(corpus)
     print('len corpus=', len(set(corpus)))
-    print('provinces',counts['provinces'])
+    print(strftime("%Y-%m-%d %H:%M:%S", gmtime()), "created corpus")
+
     if most_common:
         corpus = set(map(lambda x: x[0], counts.most_common(most_common)))
     else:
@@ -116,9 +119,17 @@ def get_features(sentences, word2idx, window_size, emb_sz):
 
     print(strftime("%Y-%m-%d %H:%M:%S", gmtime()),"Creating features..")
     R = np.random.rand(len(word2idx),emb_sz)
+    n_central_words = 0
+
     for sentence in sentences:
         #print('# sentences=',len(sentences))
         # for each central word
+        for idx, w_x in enumerate(sentence):
+            if w_x in word2idx:
+                n_central_words+=1
+                
+
+    for sentence in sentences:
         for idx, w_x in enumerate(sentence):
             if w_x in word2idx:
                 temp = []
@@ -133,7 +144,7 @@ def get_features(sentences, word2idx, window_size, emb_sz):
                             #print(w_y,"word mapped to unk")
                             word_y = '<unk>'
                         temp.append(np.hstack((R[word2idx[w_x]], R[word2idx[word_y]])))
-                        temp_hot.append(onehotencoding(word2idx[word_y], word2idx))
+                        temp_hot.append(word2idx[word_y])
                 temp = np.array(temp)
                 temp_hot = np.array(temp_hot)
 
@@ -142,13 +153,16 @@ def get_features(sentences, word2idx, window_size, emb_sz):
                 if temp.shape[0] < window_size*2 :
                    padding =  window_size*2 - temp.shape[0]
                    u=[np.hstack((R[word2idx[w_x]],R[word2idx['<null>']]))]
-                   u_hot = [onehotencoding(word2idx['<null>'], word2idx)]
+                   u_hot = word2idx['<null>']
 
                    u_all = np.repeat(u, padding, axis=0)
                    u_all_hot =  np.repeat(u_hot, padding, axis=0)
                    if len(temp)>0:
                        temp = np.vstack((temp, u_all))
-                       temp_hot = np.vstack((temp_hot, u_all_hot))
+                      #print(temp_hot.shape, u_all_hot.shape)
+
+                      #$rint(len(list(temp_hot.flatten())), u_all_hot.flatten().shape)
+                       temp_hot = np.hstack((temp_hot.flatten(),u_all_hot.flatten()))
 
 
             if len(temp)>0:
@@ -157,6 +171,7 @@ def get_features(sentences, word2idx, window_size, emb_sz):
             
     X_hot=np.stack(X_hot)
     X=np.stack(X)
+    print(X_hot.shape)
     print(strftime("%Y-%m-%d %H:%M:%S", gmtime()),"Finished creating features")
 
     return X, X_hot
