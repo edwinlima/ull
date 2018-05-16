@@ -81,20 +81,23 @@ emb_sz_2 = emb_sz*2
 #x_train_hat = np.reshape(x_train, (flatten_sz,emb_sz_2))
 #print('shape x_train_hat=', x_train_hat.shape)
 
+def concat(input):
+    return(K.concatenate([input[0], input[1]]))
+
 ### INFERENCE NETWORK
 # ENCODER
-x_contexts = Input(shape=(context_sz,))
-x_targets = Input(shape=(1,))
+x_con = Input(shape=(context_sz,))
+x_tar = Input(shape=(1,))
+y_true = Input(shape=(1,))
 
 R_emb = Embedding(input_dim=original_dim,output_dim=emb_sz)
-x_contexts = R_emb(x_contexts)
-x_targets = R_emb(x_targets)
+x_contexts = R_emb(x_con)
+x_targets = R_emb(x_tar)
 
 print('shape x_contexts=', x_contexts.shape)
 print('shape x_targets=', x_targets.shape)
-x_targets = K.repeat_elements(x_targets,context_sz,axis=1)
-#x_targets = Lambda(lambda y: K.repeat_elements(y, context_sz, axis=0))(x_targets)
-targets_contexts = K.concatenate([x_targets, x_contexts])
+x_targets = Lambda(lambda y: K.repeat_elements(y, context_sz, axis=1))(x_targets)
+targets_contexts = Lambda(concat)([x_targets, x_contexts])
 
 print('shape contexts_targets=', targets_contexts.shape)
 #x_targets = Reshape((-1,emb_sz_2))(R)
@@ -103,12 +106,8 @@ M = Dense(hidden)(targets_contexts)
 print('shape M =', M.shape)
 r=Dense(hidden, activation='relu')(M)
 print('shape r=', r.shape)
-#r=Lambda(lambda u: K.reshape(u,(-1, context_sz,hidden)))(r)
 h = Lambda(lambda x: K.sum(x, axis=1), output_shape=lambda s: (s[0], s[2]))(r)
 print('shape h sum=', h.shape)
-#h=K.transpose(h)
-#h = Lambda(lambda x: K.transpose(x))(h)
-#print('shape h transpose=', h.shape)
 z_mean = Dense(emb_sz)(h) # L
 print('shape z_mean=', z_mean.shape)
 z_log_var = Dense(emb_sz, activation='softplus')(h) # S
@@ -135,41 +134,59 @@ z = Lambda(sampling, output_shape=(emb_sz,))([z_mean, z_log_var])
 # These are the 'embeddings'
 print('z dim=',z.shape)
 decoder_h = Dense(original_dim, name="decoder")
-# vector fw 
 decoder_mean = Dense(original_dim, activation='softmax')
 h_decoded = decoder_h(z)
-print('h_decoded  dim=',h_decoded.shape)
-x_decoded_mean = decoder_mean(h_decoded)
+probs = decoder_mean(h_decoded)
 # need to recover the corpus size here
-print('x_decoded_mean shape=', x_decoded_mean.shape)
+print('probs=', probs.shape)
 
-x_decoded_mean = Lambda(lambda y: K.repeat_elements(y, context_sz, axis=0))(x_decoded_mean )
-print('x_decoded_mean shape REPEAT=', x_decoded_mean.shape)
+#x_decoded_mean = Lambda(lambda y: K.repeat_elements(y, context_sz, axis=0))(x_decoded_mean )
+vae = Model(inputs=[x_con, x_tar, y_true],outputs=probs)
 
-vae = Model(inputs=[x_targets, x_contexts],outputs=x_decoded_mean)
 
 # VAE loss = mse_loss or xent_loss + kl_loss
-# reshape here to flatten the contexts of each central word
+negloglikelihood = original_dim * metrics.sparse_categorical_crossentropy(y_true, probs)
+print("neg_log=", negloglikelihood.shape)#]
+#negloglikelihood=K.reshape(negloglikelihood, (-1,context_sz))
+print("neg_log=", negloglikelihood.shape)
+negloglikelihood = K.mean(negloglikelihood,axis=0)
 
+print("neg_log=", negloglikelihood.shape)
 
-print("x_decoded_mean=",x_decoded_mean.shape)
-negloglikelihood = original_dim * metrics.sparse_categorical_crossentropy(output, x_decoded_mean)
+# KL Divergence between 2 gaussians
+L = Embedding(input_dim=original_dim,output_dim=emb_sz)
+S = Embedding(input_dim=original_dim,output_dim=emb_sz)
 
-kl_loss = K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
+prior_loc = L(x_tar)
+prior_scale = Dense(emb_sz, activation='softplus')(S(x_tar))
+
+def kl_divergence(mu_x, sigma_x, prior_mu, prior_scale):
+    kl = K.log(prior_scale/sigma_x) +\
+           ((K.square(sigma_x) +
+             K.square(mu_x - prior_mu))/(2*K.square(prior_scale)))
+    return kl
+
 print("z_log_var=",z_log_var.shape)
+print("z_mean=",z_mean.shape)
+print("prior_loc=",prior_loc.shape)
+print("prior scale=",prior_scale.shape)
+kl = kl_divergence(z_mean, z_log_var, prior_loc, prior_scale=prior_scale)
+kl = K.mean(K.sum(kl, axis=1), axis=0)
+print("neglog=",negloglikelihood.shape)
+
 
 print("K.square(z_mean)=",K.square(z_mean).shape)
-kl_loss *= -0.5
-kl_loss =  K.repeat_elements(kl_loss, context_sz, axis=0)
+#kl_loss *= -0.5
+#kl_loss =  K.repeat_elements(kl_loss, context_sz, axis=0)
+#kl_loss = kl_loss
 #kl_loss = tf.Print(data=[kl_loss],input_=kl_loss, message="kl_loss")
-print("kl_loss=", kl_loss.shape)
-vae_loss = K.mean(reconstruction_loss + kl_loss)
+vae_loss = K.mean(negloglikelihood + kl)
 print("vae_loss=", vae_loss.shape)
 
 vae.add_loss(vae_loss)
 vae.compile(optimizer='rmsprop')
 
-vae.fit([contexts, targets],
+vae.fit([contexts, targets, output],
         shuffle=True,
         epochs=epochs,
         batch_size=batch_size)

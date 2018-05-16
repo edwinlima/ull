@@ -204,7 +204,6 @@ def get_features(sentences, word2idx, window_size, emb_sz):
 
                 if len(temp)>0:
                     word_contexts = np.hstack((temp, word2idx[w_x] ))
-                    print("word_contexts",word_contexts.shape)
                     word_contexts = np.array([word_contexts])
                     rep_word_contexts = np.repeat(word_contexts, window_size*2, axis=0)
 
