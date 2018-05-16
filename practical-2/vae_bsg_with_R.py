@@ -44,18 +44,18 @@ sfile_path = ''
 dataset = "hansards"
 dataset = "test"
 
-dataset = "hansards"
 dataset = "test"
+dataset = "hansards"
 
 
 if dataset == "hansards":# hansards
-    batch_size = 8
+    batch_size = 200
     epochs = 2
     emb_sz=100
     hidden=100
     most_common = 7000
-   # filename = './data/hansards/training_25kL.txt'
-    filename = './data/hansards/training_5kL.txt'
+    filename = './data/hansards/training_25kL.txt'
+    filename = './data/hansards/training_25000L.txt'
 else:
     batch_size = 128
     epochs = 8
@@ -207,7 +207,7 @@ embeddings = vae.get_layer("decoder").get_weights()[0]
 util.save_embeddings(embeddings_file, embeddings, tr_idx2word)
 
 # build a model to project inputs on the latent space
-encoder = Model(x, z_mean)
+#encoder = Model(x, z_mean)
 
 # display a 2D plot of the digit classes in the latent space
 #x_test_encoded = encoder.predict(x_test, batch_size=batch_size)
