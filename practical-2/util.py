@@ -119,21 +119,12 @@ def get_features(sentences, word2idx, window_size, emb_sz):
 
     print(strftime("%Y-%m-%d %H:%M:%S", gmtime()),"Creating features..")
     R = np.random.rand(len(word2idx),emb_sz)
-    n_central_words = 0
 
-    for sentence in sentences:
-        #print('# sentences=',len(sentences))
-        # for each central word
-        for idx, w_x in enumerate(sentence):
-            if w_x in word2idx:
-                n_central_words+=1
-                
 
     for sentence in sentences:
         for idx, w_x in enumerate(sentence):
             if w_x in word2idx:
                 temp = []
-                temp_hot = []
 
                 for i, w_y in enumerate(sentence[max(idx - window_size, 0) :\
                                         min(idx + window_size, len(sentence))]) :
@@ -143,39 +134,87 @@ def get_features(sentences, word2idx, window_size, emb_sz):
                         if w_y not in word2idx:  # check if word in dict
                             #print(w_y,"word mapped to unk")
                             word_y = '<unk>'
-                        temp.append(np.hstack((R[word2idx[w_x]], R[word2idx[word_y]])))
-                        temp_hot.append(word2idx[word_y])
+                        temp.append([word2idx[w_x],word2idx[word_y]])
                 temp = np.array(temp)
-                temp_hot = np.array(temp_hot)
 
                 #print('temp=',temp.shape)
                 # pad if the contexts is smaller than window size
-                if temp.shape[0] < window_size*2 :
-                   padding =  window_size*2 - temp.shape[0]
-                   u=[np.hstack((R[word2idx[w_x]],R[word2idx['<null>']]))]
-                   u_hot = word2idx['<null>']
+                if temp.shape[0] < window_size*2 and temp.shape[0]>0:
 
+                   padding =  window_size*2 - temp.shape[0]
+
+                   u = [np.hstack((word2idx[w_x],word2idx['<null>'] ))]
                    u_all = np.repeat(u, padding, axis=0)
-                   u_all_hot =  np.repeat(u_hot, padding, axis=0)
+                   #print(temp.shape, u_all.shape)
+                   #print("temp",temp, "u_all",u_all)
                    if len(temp)>0:
                        temp = np.vstack((temp, u_all))
-                      #print(temp_hot.shape, u_all_hot.shape)
 
-                      #$rint(len(list(temp_hot.flatten())), u_all_hot.flatten().shape)
-                       temp_hot = np.hstack((temp_hot.flatten(),u_all_hot.flatten()))
+            if len(temp)>0:
+                X.append(temp)
+            
+    X=np.vstack(X)
+    print(X.shape)
+    print(strftime("%Y-%m-%d %H:%M:%S", gmtime()),"Finished creating features")
+
+    return X
+
+
+
+def get_features(sentences, word2idx, window_size, emb_sz):
+    #sentences: set of sentences
+    #word2idx dict with the word index of the whole corpus
+    #window size: size of the context
+    #Return: X: concatenated context and central word deterministic embeddings,
+    #           shape(central_words x window_size*2 x emb_sz*2)
+    #        X_hot: context hot vectors shape (central_words*window_size*2 x vocab_size)
+
+    X_hot = []
+    X=[]
+
+    print(strftime("%Y-%m-%d %H:%M:%S", gmtime()),"Creating features..")
+    R = np.random.rand(len(word2idx),emb_sz)
+
+
+    for sentence in sentences:
+        for idx, w_x in enumerate(sentence):
+            if w_x in word2idx:
+                temp = []
+
+                for i, w_y in enumerate(sentence[max(idx - window_size, 0) :\
+                                        min(idx + window_size, len(sentence))]) :
+
+                    if i != idx:
+                        word_y = w_y
+                        if w_y not in word2idx:  # check if word in dict
+                            #print(w_y,"word mapped to unk")
+                            word_y = '<unk>'
+                        temp.append( word2idx[word_y] )
+
+                temp=np.array(temp)
+
+
+                if len(temp) < window_size*2 and len(temp)>0:
+                   padding =  window_size*2 - len(temp)
+
+                   u = [ word2idx['<null>'] ]
+                   u_all = np.repeat(u, padding, axis=0)
+                   if len(temp)>0:
+                       temp = np.hstack((temp, u_all))
 
 
             if len(temp)>0:
-                X_hot.append(temp_hot)
-                X.append(temp)
-            
-    X_hot=np.stack(X_hot)
-    X=np.stack(X)
-    print(X_hot.shape)
+                word_contexts = [list(temp),word2idx[w_x]]
+                for i in range(window_size*2)
+                X.append(word_contexts)
+                print("word_contexts",word_contexts)
+
+
+    #X=np.vstack(X)
+    print(X.shape)
     print(strftime("%Y-%m-%d %H:%M:%S", gmtime()),"Finished creating features")
 
-    return X, X_hot
-
+    return X
 
 def save_embeddings(embeddings_file, embeddings, idx2word):
     with open(embeddings_file, 'w') as csvfile:
