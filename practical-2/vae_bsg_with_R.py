@@ -57,7 +57,7 @@ if dataset == "hansards":# hansards
    # filename = './data/hansards/training_25kL.txt'
     filename = './data/hansards/training_5kL.txt'
 else:
-    batch_size = 4
+    batch_size = 128
     epochs = 8
     emb_sz=100
     hidden=100
@@ -89,7 +89,8 @@ def concat(input):
 x_con = Input(shape=(context_sz,))
 x_tar = Input(shape=(1,))
 y_true = Input(shape=(1,))
-
+print('shape x_con=', x_con.shape)
+print('shape x_tar=', x_tar.shape)
 R_emb = Embedding(input_dim=original_dim,output_dim=emb_sz)
 x_contexts = R_emb(x_con)
 x_targets = R_emb(x_tar)
@@ -143,6 +144,7 @@ print('probs=', probs.shape)
 #x_decoded_mean = Lambda(lambda y: K.repeat_elements(y, context_sz, axis=0))(x_decoded_mean )
 vae = Model(inputs=[x_con, x_tar, y_true],outputs=probs)
 
+x_tar_2=K.reshape(x_tar, (-1,))
 
 # VAE loss = mse_loss or xent_loss + kl_loss
 negloglikelihood = metrics.sparse_categorical_crossentropy(y_true, probs)
@@ -157,8 +159,8 @@ print("neg_log=", negloglikelihood.shape)
 L = Embedding(input_dim=original_dim,output_dim=emb_sz)
 S = Embedding(input_dim=original_dim,output_dim=emb_sz)
 
-prior_loc = L(x_tar)
-prior_scale = Dense(emb_sz, activation='softplus')(S(x_tar))
+prior_loc = L(x_tar_2)
+prior_scale = Dense(emb_sz, activation='softplus')(S(x_tar_2))
 
 def kl_divergence(mu_x, sigma_x, prior_mu, prior_scale):
     kl = K.log(prior_scale/sigma_x) +\
@@ -172,19 +174,21 @@ print("prior_loc=",prior_loc.shape)
 print("prior scale=",prior_scale.shape)
 kl = kl_divergence(z_mean, z_log_var, prior_loc, prior_scale=prior_scale)
 kl = kl-0.5
+print("kl=",kl.shape)
+
 kl = K.mean(K.sum(kl, axis=1), axis=0)
+print("kl=",kl.shape)
+
 print("neglog=",negloglikelihood.shape)
 
 
 print("K.square(z_mean)=",K.square(z_mean).shape)
-#kl_loss *= -0.5
-#kl_loss =  K.repeat_elements(kl_loss, context_sz, axis=0)
-#kl_loss = kl_loss
-kl = tf.Print(data=[kl],input_=kl, message="kl_loss")
-negloglikelihood  = tf.Print(data=[negloglikelihood ],input_=negloglikelihood , message="neglog")
+#kl = tf.Print(data=[kl],input_=kl, message="kl_loss")
+#negloglikelihood  = tf.Print(data=[negloglikelihood ],input_=negloglikelihood , message="neglog")
 
-elbo = negloglikelihood - kl
-vae_loss = -elbo
+#elbo = negloglikelihood - kl
+#vae_loss = -elbo
+vae_loss = kl-negloglikelihood
 print("vae_loss=", vae_loss.shape)
 
 vae.add_loss(vae_loss)
