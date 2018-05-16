@@ -145,7 +145,7 @@ vae = Model(inputs=[x_con, x_tar, y_true],outputs=probs)
 
 
 # VAE loss = mse_loss or xent_loss + kl_loss
-negloglikelihood = original_dim * metrics.sparse_categorical_crossentropy(y_true, probs)
+negloglikelihood = metrics.sparse_categorical_crossentropy(y_true, probs)
 print("neg_log=", negloglikelihood.shape)#]
 #negloglikelihood=K.reshape(negloglikelihood, (-1,context_sz))
 print("neg_log=", negloglikelihood.shape)
@@ -171,6 +171,7 @@ print("z_mean=",z_mean.shape)
 print("prior_loc=",prior_loc.shape)
 print("prior scale=",prior_scale.shape)
 kl = kl_divergence(z_mean, z_log_var, prior_loc, prior_scale=prior_scale)
+kl = kl-0.5
 kl = K.mean(K.sum(kl, axis=1), axis=0)
 print("neglog=",negloglikelihood.shape)
 
@@ -179,8 +180,11 @@ print("K.square(z_mean)=",K.square(z_mean).shape)
 #kl_loss *= -0.5
 #kl_loss =  K.repeat_elements(kl_loss, context_sz, axis=0)
 #kl_loss = kl_loss
-#kl_loss = tf.Print(data=[kl_loss],input_=kl_loss, message="kl_loss")
-vae_loss = K.mean(negloglikelihood + kl)
+kl = tf.Print(data=[kl],input_=kl, message="kl_loss")
+negloglikelihood  = tf.Print(data=[negloglikelihood ],input_=negloglikelihood , message="neglog")
+
+elbo = negloglikelihood - kl
+vae_loss = -elbo
 print("vae_loss=", vae_loss.shape)
 
 vae.add_loss(vae_loss)
