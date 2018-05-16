@@ -169,9 +169,8 @@ def get_features(sentences, word2idx, window_size, emb_sz):
     #           shape(central_words x window_size*2 x emb_sz*2)
     #        X_hot: context hot vectors shape (central_words*window_size*2 x vocab_size)
 
-    X_hot = []
     X=[]
-
+    Y=[]
     print(strftime("%Y-%m-%d %H:%M:%S", gmtime()),"Creating features..")
     R = np.random.rand(len(word2idx),emb_sz)
 
@@ -191,7 +190,7 @@ def get_features(sentences, word2idx, window_size, emb_sz):
                             word_y = '<unk>'
                         temp.append( word2idx[word_y] )
 
-                temp=np.array(temp)
+                #temp=np.array(temp)
 
 
                 if len(temp) < window_size*2 and len(temp)>0:
@@ -200,21 +199,30 @@ def get_features(sentences, word2idx, window_size, emb_sz):
                    u = [ word2idx['<null>'] ]
                    u_all = np.repeat(u, padding, axis=0)
                    if len(temp)>0:
-                       temp = np.hstack((temp, u_all))
+                       temp = np.hstack((np.array(temp), u_all))
 
 
-            if len(temp)>0:
-                word_contexts = [list(temp),word2idx[w_x]]
-                for i in range(window_size*2)
-                X.append(word_contexts)
-                print("word_contexts",word_contexts)
+                if len(temp)>0:
+                    word_contexts = np.hstack((temp, word2idx[w_x] ))
+                    print("word_contexts",word_contexts.shape)
+                    word_contexts = np.array([word_contexts])
+                    rep_word_contexts = np.repeat(word_contexts, window_size*2, axis=0)
+
+                    X.append(rep_word_contexts)
+                    Y.append(list(temp))
 
 
-    #X=np.vstack(X)
-    print(X.shape)
+    X=np.vstack(X)
+    contexts, targets = X[:,:10], X[:,10]
+    Y=np.array(Y)
+    Y=Y.flatten()
+    print("contexts=",contexts.shape)
+    print("targets=",targets.shape)
+
+    print("Y=",Y.shape)
     print(strftime("%Y-%m-%d %H:%M:%S", gmtime()),"Finished creating features")
 
-    return X
+    return contexts, targets, Y
 
 def save_embeddings(embeddings_file, embeddings, idx2word):
     with open(embeddings_file, 'w') as csvfile:

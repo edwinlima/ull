@@ -74,27 +74,36 @@ tr_word2idx, tr_idx2word, sent_train = util.read_input(filename, most_common=mos
 tst_word2idx, tst_idx2word,  sent_test = util.read_input('./data/test.en')
 corpus_dim = len(tr_word2idx)
 original_dim = corpus_dim
-x_train  = util.get_features(sent_train, tr_word2idx, window_size, emb_sz)
+contexts, targets, output = util.get_features(sent_train, tr_word2idx, window_size, emb_sz)
 corpus_sz = len(tr_word2idx)
-flatten_sz = x_train.shape[0]* x_train.shape[1]
 emb_sz_2 = emb_sz*2
 
 #x_train_hat = np.reshape(x_train, (flatten_sz,emb_sz_2))
 #print('shape x_train_hat=', x_train_hat.shape)
 
+### INFERENCE NETWORK
 # ENCODER
-x = Input(shape=(2,))
+x_contexts = Input(shape=(context_sz,))
+x_targets = Input(shape=(1,))
 
-R = Embedding(input_dim=original_dim,output_dim=emb_sz)(x)
-R = Reshape((-1,emb_sz_2))(R)
-print('shape R=', R.shape)
+R_emb = Embedding(input_dim=original_dim,output_dim=emb_sz)
+x_contexts = R_emb(x_contexts)
+x_targets = R_emb(x_targets)
 
-M = Dense(hidden)(R)
+print('shape x_contexts=', x_contexts.shape)
+print('shape x_targets=', x_targets.shape)
+x_targets = K.repeat_elements(x_targets,context_sz,axis=1)
+#x_targets = Lambda(lambda y: K.repeat_elements(y, context_sz, axis=0))(x_targets)
+targets_contexts = K.concatenate([x_targets, x_contexts])
+
+print('shape contexts_targets=', targets_contexts.shape)
+#x_targets = Reshape((-1,emb_sz_2))(R)
+
+M = Dense(hidden)(targets_contexts)
 print('shape M =', M.shape)
 r=Dense(hidden, activation='relu')(M)
 print('shape r=', r.shape)
-r=Lambda(lambda u: K.reshape(u,(-1, context_sz,hidden)))(r)
-print('shape r reshape=', r.shape)
+#r=Lambda(lambda u: K.reshape(u,(-1, context_sz,hidden)))(r)
 h = Lambda(lambda x: K.sum(x, axis=1), output_shape=lambda s: (s[0], s[2]))(r)
 print('shape h sum=', h.shape)
 #h=K.transpose(h)
@@ -104,8 +113,6 @@ z_mean = Dense(emb_sz)(h) # L
 print('shape z_mean=', z_mean.shape)
 z_log_var = Dense(emb_sz, activation='softplus')(h) # S
 print('shape z_log_var=', z_log_var.shape)
-
-
 
 
 def sampling(args):
@@ -121,6 +128,7 @@ def sampling(args):
 # note that "output_shape" isn't necessary with the TensorFlow backend
 z = Lambda(sampling, output_shape=(emb_sz,))([z_mean, z_log_var])
 
+### GENERATIVE MODEL
 # Decoder
 # we instantiate these layers separately so as to reuse them later
 # Generator: We generate new data given the latent variable z
@@ -138,29 +146,15 @@ print('x_decoded_mean shape=', x_decoded_mean.shape)
 x_decoded_mean = Lambda(lambda y: K.repeat_elements(y, context_sz, axis=0))(x_decoded_mean )
 print('x_decoded_mean shape REPEAT=', x_decoded_mean.shape)
 
-vae = Model(inputs=[x, x_hot],outputs=x_decoded_mean)
+vae = Model(inputs=[x_targets, x_contexts],outputs=x_decoded_mean)
 
 # VAE loss = mse_loss or xent_loss + kl_loss
 # reshape here to flatten the contexts of each central word
 
-#x_hot_flat=K.reshape(x_hot, (-1,original_dim ))
-#
-#x_hot = tf.Print(data=[x_hot],input_=x_hot, message="x_hot")
 
-x_hot_flat=K.reshape(x_hot, (-1,))
-#x_hot_flat=K.flatten(x_hot)
-print("shape x_hot=", x_hot_flat.shape)
-x_hot_flat_2 = K.one_hot(x_hot_flat, original_dim)
-
-#x_decoded_mean = tf.Print(data=[x_decoded_mean],input_=x_decoded_mean, message="x_dec")
-print("shape x_hot_flat_2=", x_hot_flat_2.shape)
 print("x_decoded_mean=",x_decoded_mean.shape)
-#reconstruction_loss = original_dim * metrics.categorical_crossentropy(x_decoded_mean,x_hot_flat_2)
-reconstruction_loss = original_dim * metrics.binary_crossentropy(x_decoded_mean,x_hot_flat_2)
-#reconstruction_loss =  tf.Print(data=[reconstruction_loss],input_=reconstruction_loss, message="recon_loss")
+negloglikelihood = original_dim * metrics.sparse_categorical_crossentropy(output, x_decoded_mean)
 
-print("rec_loss=", reconstruction_loss.shape)
-print("rec_loss=", reconstruction_loss.shape)
 kl_loss = K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
 print("z_log_var=",z_log_var.shape)
 
@@ -175,7 +169,7 @@ print("vae_loss=", vae_loss.shape)
 vae.add_loss(vae_loss)
 vae.compile(optimizer='rmsprop')
 
-vae.fit(x_train,
+vae.fit([contexts, targets],
         shuffle=True,
         epochs=epochs,
         batch_size=batch_size)
