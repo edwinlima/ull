@@ -57,7 +57,7 @@ if dataset == "hansards":# hansards
     filename = './data/hansards/training_25kL.txt'
     filename = './data/hansards/training_25000L.txt'
 else:
-    batch_size = 128
+    batch_size = 12
     epochs = 8
     emb_sz=100
     hidden=100
@@ -163,9 +163,9 @@ prior_loc = L(x_tar_2)
 prior_scale = Dense(emb_sz, activation='softplus')(S(x_tar_2))
 
 def kl_divergence(mu_x, sigma_x, prior_mu, prior_scale):
-    kl = K.log(prior_scale/sigma_x) +\
-           ((K.square(sigma_x) +
-             K.square(mu_x - prior_mu))/(2*K.square(prior_scale)))
+    kl = (prior_scale/sigma_x) +\
+           ((K.square(K.exp(sigma_x)) +
+             K.square(mu_x - prior_mu))/(2*K.square(K.exp(prior_scale))))
     return kl
 
 print("z_log_var=",z_log_var.shape)
