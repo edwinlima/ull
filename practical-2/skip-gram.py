@@ -26,7 +26,6 @@ for sentence in sentences:
     sentences_tokens.append(s) 
     corpus = corpus + s
 corpus = set(corpus)
-#print(corpus)
 
 
 word2idx = defaultdict(list)
