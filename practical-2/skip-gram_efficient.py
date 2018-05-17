@@ -62,20 +62,13 @@ def get_features(sentences, word2idx, window_size, corpus):
 def main():
     train=1
     window_sz = 5  #n words to the left, x words to the right
-    embeddings_sz = 100 #
+    embeddings_sz = 50 #
     epochs = 10
     
     if train:
         word2idx, idx2word,  sentences_tokens, corpus = util.read_input(filename, most_common=most_common)
         X,Y =get_features(sentences_tokens, word2idx, window_sz, corpus)
-        #neg_X, neg_Y =X, Y
-        #shuffle(neg_X)
-        #shuffle(neg_Y)
         labels =  [1] * len(X)
-        #neg_labels =  [0] * len(X)
-        #X = X+neg_X
-        #Y = Y+neg_Y
-        #labels = labels + neg_labels
         X =np.array(X, dtype=float)
         Y =np.array(Y, dtype=float)
 
@@ -104,14 +97,9 @@ def main():
         model.compile(loss='binary_crossentropy', optimizer='rmsprop')
 
         model.fit([X,Y],labels, epochs=epochs, batch_size=128)
-        #for cnt in range(epochs):
-         #   loss = model.train_on_batch([X, Y], labels)
-        
-        #    if cnt % 2 == 0:
-         #       print("Iteration {}, loss={}".format(cnt, loss))
-
+       
     
-    embeddings_file = "./output/embeddings_vocab_%s_%s_epochs_%s_skipgram.txt"%(len(corpus), most_common, epochs)
+    embeddings_file = "./output/embeddings_vocab_%s_%s_epochs_%s_%s_skipgram.txt"%(len(corpus), most_common, epochs, dataset)
 
     embeddings = np.transpose(model.get_layer(name='embedding').get_weights()[0])
 
