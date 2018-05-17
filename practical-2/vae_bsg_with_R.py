@@ -58,7 +58,7 @@ if dataset == "hansards":# hansards
     filename = './data/hansards/training_25000L.txt'
 else:
     batch_size = 12
-    epochs = 8
+    epochs = 10
     emb_sz=100
     hidden=100
     most_common = 1600
@@ -74,21 +74,40 @@ tr_word2idx, tr_idx2word, sent_train = util.read_input(filename, most_common=mos
 tst_word2idx, tst_idx2word,  sent_test = util.read_input('./data/test.en')
 corpus_dim = len(tr_word2idx)
 original_dim = corpus_dim
-contexts, targets, output = util.get_features(sent_train, tr_word2idx, window_size, emb_sz)
+contexts, targets= util.get_features(sent_train, tr_word2idx, window_size, emb_sz)
 corpus_sz = len(tr_word2idx)
 emb_sz_2 = emb_sz*2
 
-#x_train_hat = np.reshape(x_train, (flatten_sz,emb_sz_2))
-#print('shape x_train_hat=', x_train_hat.shape)
 
 def concat(input):
     return(K.concatenate([input[0], input[1]]))
+
+
+
+def sampling(args):
+    # Reparametrization trick
+    z_mean, z_log_var = args
+    print('shape z_mean sampling=', z_log_var.shape, 'shape z_log_var=', z_log_var.shape)
+    epsilon = K.random_normal(shape=(K.shape(z_mean)[0], emb_sz), mean=0.,
+                              stddev=epsilon_std)
+
+    print("shape epsilon=", epsilon.shape )
+
+    return z_mean + K.exp(z_log_var / 2) * epsilon
+
+
+
+def kl_divergence(mu_x, sigma_x, prior_mu, prior_scale):
+    # KL divergence between 2 gaussians - analytical form
+    kl = (prior_scale/sigma_x) +\
+           ((K.square(K.exp(sigma_x)) +
+             K.square(mu_x - prior_mu))/(2*K.square(K.exp(prior_scale))))
+    return kl
 
 ### INFERENCE NETWORK
 # ENCODER
 x_con = Input(shape=(context_sz,))
 x_tar = Input(shape=(1,))
-y_true = Input(shape=(1,))
 print('shape x_con=', x_con.shape)
 print('shape x_tar=', x_tar.shape)
 R_emb = Embedding(input_dim=original_dim,output_dim=emb_sz)
@@ -115,16 +134,6 @@ z_log_var = Dense(emb_sz, activation='softplus')(h) # S
 print('shape z_log_var=', z_log_var.shape)
 
 
-def sampling(args):
-    z_mean, z_log_var = args
-    print('shape z_mean sampling=', z_log_var.shape, 'shape z_log_var=', z_log_var.shape)
-    epsilon = K.random_normal(shape=(K.shape(z_mean)[0], emb_sz), mean=0.,
-                              stddev=epsilon_std)
-        
-    print("shape epsilon=", epsilon.shape )
-    
-    return z_mean + K.exp(z_log_var / 2) * epsilon
-
 # note that "output_shape" isn't necessary with the TensorFlow backend
 z = Lambda(sampling, output_shape=(emb_sz,))([z_mean, z_log_var])
 
@@ -140,33 +149,30 @@ h_decoded = decoder_h(z)
 probs = decoder_mean(h_decoded)
 # need to recover the corpus size here
 print('probs=', probs.shape)
+#probs = Lambda(lambda y: K.repeat_elements(y, context_sz, axis=0))(x_decoded_mean )
 
-#x_decoded_mean = Lambda(lambda y: K.repeat_elements(y, context_sz, axis=0))(x_decoded_mean )
-vae = Model(inputs=[x_con, x_tar, y_true],outputs=probs)
+vae = Model(inputs=[x_con, x_tar],outputs=probs)
 
 x_tar_2=K.reshape(x_tar, (-1,))
 
 # VAE loss = mse_loss or xent_loss + kl_loss
-negloglikelihood = metrics.sparse_categorical_crossentropy(y_true, probs)
+# this will reintroduce batch size
+probs = K.repeat_elements(probs, context_sz, axis=0)
+negloglikelihood = metrics.sparse_categorical_crossentropy(x_con, probs)
 print("neg_log=", negloglikelihood.shape)#]
-#negloglikelihood=K.reshape(negloglikelihood, (-1,context_sz))
+negloglikelihood=K.reshape(negloglikelihood, (-1,context_sz))
 print("neg_log=", negloglikelihood.shape)
-negloglikelihood = K.mean(negloglikelihood,axis=0)
+loglikelihood = -K.mean(K.sum(negloglikelihood, axis=1),axis=0)
 
 print("neg_log=", negloglikelihood.shape)
 
-# KL Divergence between 2 gaussians
 L = Embedding(input_dim=original_dim,output_dim=emb_sz)
 S = Embedding(input_dim=original_dim,output_dim=emb_sz)
-
+# Prior for target word
 prior_loc = L(x_tar_2)
 prior_scale = Dense(emb_sz, activation='softplus')(S(x_tar_2))
 
-def kl_divergence(mu_x, sigma_x, prior_mu, prior_scale):
-    kl = (prior_scale/sigma_x) +\
-           ((K.square(K.exp(sigma_x)) +
-             K.square(mu_x - prior_mu))/(2*K.square(K.exp(prior_scale))))
-    return kl
+
 
 print("z_log_var=",z_log_var.shape)
 print("z_mean=",z_mean.shape)
@@ -175,10 +181,8 @@ print("prior scale=",prior_scale.shape)
 kl = kl_divergence(z_mean, z_log_var, prior_loc, prior_scale=prior_scale)
 kl = kl-0.5
 print("kl=",kl.shape)
-
 kl = K.mean(K.sum(kl, axis=1), axis=0)
 print("kl=",kl.shape)
-
 print("neglog=",negloglikelihood.shape)
 
 
@@ -186,15 +190,13 @@ print("K.square(z_mean)=",K.square(z_mean).shape)
 #kl = tf.Print(data=[kl],input_=kl, message="kl_loss")
 #negloglikelihood  = tf.Print(data=[negloglikelihood ],input_=negloglikelihood , message="neglog")
 
-#elbo = negloglikelihood - kl
-#vae_loss = -elbo
-vae_loss = kl-negloglikelihood
+vae_loss = kl-loglikelihood
 print("vae_loss=", vae_loss.shape)
 
 vae.add_loss(vae_loss)
 vae.compile(optimizer='rmsprop')
 
-vae.fit([contexts, targets, output],
+vae.fit([contexts, targets],
         shuffle=True,
         epochs=epochs,
         batch_size=batch_size)
@@ -205,12 +207,6 @@ embeddings_file = "./output/embeddings_vocab_%s_ep_%s_emb_%s_hid_%s_%s_%s_test_%
 embeddings = vae.get_layer("decoder").get_weights()[0]
 
 util.save_embeddings(embeddings_file, embeddings, tr_idx2word)
-
-# build a model to project inputs on the latent space
-#encoder = Model(x, z_mean)
-
-# display a 2D plot of the digit classes in the latent space
-#x_test_encoded = encoder.predict(x_test, batch_size=batch_size)
 
 
 # build a digit generator that can sample from the learned distribution
