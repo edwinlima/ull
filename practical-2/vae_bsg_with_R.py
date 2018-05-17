@@ -44,18 +44,18 @@ sfile_path = ''
 dataset = "hansards"
 dataset = "test"
 
-dataset = "hansards"
 dataset = "test"
+dataset = "hansards"
 
 
 if dataset == "hansards":# hansards
-    batch_size = 8
+    batch_size = 200
     epochs = 2
     emb_sz=100
     hidden=100
     most_common = 7000
-   # filename = './data/hansards/training_25kL.txt'
-    filename = './data/hansards/training_5kL.txt'
+    filename = './data/hansards/training_25kL.txt'
+    filename = './data/hansards/training_25000L.txt'
 else:
     batch_size = 12
     epochs = 20
