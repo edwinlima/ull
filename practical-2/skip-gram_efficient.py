@@ -62,8 +62,8 @@ def get_features(sentences, word2idx, window_size, corpus):
 def main():
     train=1
     window_sz = 5  #n words to the left, x words to the right
-    embeddings_sz = 50 #
-    epochs = 10
+    embeddings_sz = 100 #
+    epochs = 20
     
     if train:
         word2idx, idx2word,  sentences_tokens, corpus = util.read_input(filename, most_common=most_common)
@@ -99,7 +99,7 @@ def main():
         model.fit([X,Y],labels, epochs=epochs, batch_size=128)
        
     
-    embeddings_file = "./output/embeddings_vocab_%s_%s_epochs_%s_%s_skipgram.txt"%(len(corpus), most_common, epochs, dataset)
+    embeddings_file = "./output/embeddings_vocab_%s_%s_epochs_%s_%s_emb_%s_skipgram.txt"%(len(corpus), most_common, epochs, dataset, embeddings_sz)
 
     embeddings = np.transpose(model.get_layer(name='embedding').get_weights()[0])
 
