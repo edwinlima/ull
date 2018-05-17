@@ -13,7 +13,6 @@ from keras.layers import Dense, Flatten
 #from keras.optimizers import SGD
 import numpy as np
 
-
     
 #print('word 0=', idx2word[0], 'word to index=', word2idx[idx2word[0]]) 
 window_sz = 5 #five words left, five words right
