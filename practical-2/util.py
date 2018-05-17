@@ -223,6 +223,67 @@ def get_features(sentences, word2idx, window_size, emb_sz):
 
     return contexts, targets, Y
 
+
+
+def get_features(sentences, word2idx, window_size, emb_sz):
+    #sentences: set of sentences
+    #word2idx dict with the word index of the whole corpus
+    #window size: size of the context
+    #Return: X: concatenated context and central word deterministic embeddings,
+    #           shape(central_words x window_size*2 x emb_sz*2)
+    #        X_hot: context hot vectors shape (central_words*window_size*2 x vocab_size)
+
+    X=[]
+    Y=[]
+    print(strftime("%Y-%m-%d %H:%M:%S", gmtime()),"Creating features..")
+    R = np.random.rand(len(word2idx),emb_sz)
+
+
+    for sentence in sentences:
+        for idx, w_x in enumerate(sentence):
+            if w_x in word2idx:
+                temp = []
+
+                for i, w_y in enumerate(sentence[max(idx - window_size, 0) :\
+                                        min(idx + window_size, len(sentence))]) :
+
+                    if i != idx:
+                        word_y = w_y
+                        if w_y not in word2idx:  # check if word in dict
+                            #print(w_y,"word mapped to unk")
+                            word_y = '<unk>'
+                        temp.append( word2idx[word_y] )
+
+                #temp=np.array(temp)
+
+
+                if len(temp) < window_size*2 and len(temp)>0:
+                   padding =  window_size*2 - len(temp)
+
+                   u = [ word2idx['<null>'] ]
+                   u_all = np.repeat(u, padding, axis=0)
+                   if len(temp)>0:
+                       temp = np.hstack((np.array(temp), u_all))
+
+
+                if len(temp)>0:
+                    word_contexts = np.hstack((temp, word2idx[w_x] ))
+                    word_contexts = np.array([word_contexts])
+                    #rep_word_contexts = np.repeat(word_contexts, window_size*2, axis=0)
+
+                    X.append(word_contexts)
+
+
+    X=np.vstack(X)
+    contexts, targets = X[:,:10], X[:,10]
+    print("contexts=",contexts.shape)
+    print("targets=",targets.shape)
+
+    print(strftime("%Y-%m-%d %H:%M:%S", gmtime()),"Finished creating features")
+
+    return contexts, targets
+
+
 def save_embeddings(embeddings_file, embeddings, idx2word):
     with open(embeddings_file, 'w') as csvfile:
         writer = csv.writer(csvfile, delimiter=' ')
