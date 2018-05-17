@@ -25,6 +25,8 @@ dataset = 'test'
 dataset='hansards'
 
 
+
+
 if dataset == 'hansards':
     filename = './data/hansards/training_25kL.txt'
 else:
@@ -61,7 +63,8 @@ def main():
     train=1
     window_sz = 5  #n words to the left, x words to the right
     embeddings_sz = 100 #
-    epochs = 100
+    epochs = 10
+    
     if train:
         word2idx, idx2word,  sentences_tokens, corpus = util.read_input(filename, most_common=most_common)
         X,Y =get_features(sentences_tokens, word2idx, window_sz, corpus)
@@ -90,7 +93,6 @@ def main():
         context = embedding(input_context)
         context = Reshape((embeddings_sz, 1))(context)
 
-        similarity = merge([target, context], mode='cos', dot_axes=0)
         # now perform the dot product operation to get a similarity measure
         dot_product = merge([target, context], mode='dot', dot_axes=1)
         dot_product = Reshape((1,))(dot_product)
@@ -101,14 +103,15 @@ def main():
         model = Model(input=[input_target, input_context], outputs=output)
         model.compile(loss='binary_crossentropy', optimizer='rmsprop')
 
-
-        for cnt in range(epochs):
-            loss = model.train_on_batch([X, Y], labels)
-            if cnt % 2 == 0:
-                print("Iteration {}, loss={}".format(cnt, loss))
+        model.fit([X,Y],labels, epochs=epochs, batch_size=128)
+        #for cnt in range(epochs):
+         #   loss = model.train_on_batch([X, Y], labels)
+        
+        #    if cnt % 2 == 0:
+         #       print("Iteration {}, loss={}".format(cnt, loss))
 
     
-    embeddings_file = "./output/embeddings_vocab_%s_%s_skipgram.txt"%(len(corpus), most_common)
+    embeddings_file = "./output/embeddings_vocab_%s_%s_epochs_%s_skipgram.txt"%(len(corpus), most_common, epochs)
 
     embeddings = np.transpose(model.get_layer(name='embedding').get_weights()[0])
 
