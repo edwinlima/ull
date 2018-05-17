@@ -21,8 +21,9 @@ from random import shuffle
     
 #print('word 0=', idx2word[0], 'word to index=', word2idx[idx2word[0]]) 
 window_sz = 5 #five words left, five words right
-dataset='hansards'
 dataset = 'test'
+dataset='hansards'
+
 
 if dataset == 'hansards':
     filename = './data/hansards/training_25kL.txt'
@@ -51,7 +52,7 @@ def get_features(sentences, word2idx, window_size, corpus):
         for idx, w_x in enumerate(sentence):
             for w_y in sentence[max(idx - window_size, 0) :\
                                     min(idx + window_size, len(sentence)) + 1] : 
-                if w_y != w_x:
+                if w_y != w_x and w_x in word2idx and w_y in word2idx:
                     X.append(word2idx[w_x])
                     Y.append(word2idx[w_y])
     return X, Y
@@ -59,19 +60,19 @@ def get_features(sentences, word2idx, window_size, corpus):
 def main():
     train=1
     window_sz = 5  #n words to the left, x words to the right
-    embeddings_sz = 10 #
+    embeddings_sz = 100 #
     epochs = 100
     if train:
         word2idx, idx2word,  sentences_tokens, corpus = util.read_input(filename, most_common=most_common)
         X,Y =get_features(sentences_tokens, word2idx, window_sz, corpus)
-        neg_X, neg_Y =X, Y
-        shuffle(neg_X)
-        shuffle(neg_Y)
+        #neg_X, neg_Y =X, Y
+        #shuffle(neg_X)
+        #shuffle(neg_Y)
         labels =  [1] * len(X)
-        neg_labels =  [0] * len(X)
-        X = X+neg_X
-        Y = Y+neg_Y
-        labels = labels + neg_labels
+        #neg_labels =  [0] * len(X)
+        #X = X+neg_X
+        #Y = Y+neg_Y
+        #labels = labels + neg_labels
         X =np.array(X, dtype=float)
         Y =np.array(Y, dtype=float)
 
