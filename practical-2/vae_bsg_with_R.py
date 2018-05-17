@@ -58,8 +58,8 @@ if dataset == "hansards":# hansards
     filename = './data/hansards/training_5kL.txt'
 else:
     batch_size = 12
-    epochs = 10
-    emb_sz=100
+    epochs = 20
+    emb_sz=50
     hidden=100
     most_common = 1600
     filename = './data/test.en'
