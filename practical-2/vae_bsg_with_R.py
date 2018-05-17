@@ -167,7 +167,7 @@ loglikelihood = -K.mean(K.sum(negloglikelihood, axis=1),axis=0)
 
 print("neg_log=", negloglikelihood.shape)
 
-L = Embedding(input_dim=original_dim,output_dim=emb_sz)
+L = Embedding(input_dim=original_dim,output_dim=emb_sz, name="embedding_means")
 S = Embedding(input_dim=original_dim,output_dim=emb_sz)
 # Prior for target word
 prior_loc = L(x_tar_2)
