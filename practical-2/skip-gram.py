@@ -34,11 +34,11 @@ def get_features(sentences, word2idx, window_size, corpus):
     
     for sentence in sentences:
         for idx, w_x in enumerate(sentence):
-            for w_y in sentence[max(idx - window_size, 0) :\
-                                    min(idx + window_size, len(sentence)) + 1] : 
-                if w_y != w_x:
-                    X.append(onehotencoding(word2idx[w_x], corpus))
-                    Y.append(onehotencoding(word2idx[w_y], corpus))
+            for idy, w_y in enumerate(sentence[max(idx - window_size, 0) :\
+                                    min(idx + window_size, len(sentence)) + 1]) : 
+                if idy != idx:
+                    X.append(word2idx[w_x])
+                    Y.append(word2idx[w_x])
     return X, Y
 
 def main():
@@ -53,12 +53,11 @@ def main():
         X =np.array(X, dtype=float)
         Y =np.array(Y, dtype=float)
         print('X=',X.shape, 'Y=', Y.shape, 'corpus=',len(corpus))
-        print(len(X[0]))
         model = Sequential()
-        model.add(Dense(embeddings_sz, activation='linear', input_dim=len(corpus)))    
+        model.add(Dense(embeddings_sz, activation='linear', input_dim=1))    
         #model.add(Flatten())
         model.add(Dense(len(corpus), activation='softmax'))
-        model.compile(loss='mse', optimizer='rmsprop')    
+        model.compile(loss='binary_crossentropy', optimizer='rmsprop')    
         model.fit(X,Y, epochs=100, batch_size=128)
     print('shape=', len(model.layers[0].get_weights()), 'weights=',model.layers[0].get_weights()[0])
     #score = model.evaluate()
