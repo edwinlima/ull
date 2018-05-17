@@ -49,13 +49,15 @@ dataset = "hansards"
 
 
 if dataset == "hansards":# hansards
-    batch_size = 200
-    epochs = 2
+    batch_size = 32
+    epochs = 8
     emb_sz=100
     hidden=100
-    most_common = 7000
+    most_common = 10000
     filename = './data/hansards/training_25kL.txt'
     filename = './data/hansards/training_25000L.txt'
+    
+
 else:
     batch_size = 12
     epochs = 10
@@ -69,9 +71,9 @@ window_size=5
 
 context_sz=window_size*2
 
-tr_word2idx, tr_idx2word, sent_train = util.read_input(filename, most_common=most_common)
+tr_word2idx, tr_idx2word, sent_train, corpus = util.read_input(filename, most_common=most_common)
 
-tst_word2idx, tst_idx2word,  sent_test = util.read_input('./data/test.en')
+tst_word2idx, tst_idx2word,  sent_test, corpus = util.read_input('./data/test.en')
 corpus_dim = len(tr_word2idx)
 original_dim = corpus_dim
 contexts, targets= util.get_features(sent_train, tr_word2idx, window_size, emb_sz)
@@ -81,7 +83,6 @@ emb_sz_2 = emb_sz*2
 
 def concat(input):
     return(K.concatenate([input[0], input[1]]))
-
 
 
 def sampling(args):
@@ -155,7 +156,7 @@ vae = Model(inputs=[x_con, x_tar],outputs=probs)
 
 x_tar_2=K.reshape(x_tar, (-1,))
 
-# VAE loss = mse_loss or xent_loss + kl_loss
+# VAE loss = xent_loss + kl_loss
 # this will reintroduce batch size
 probs = K.repeat_elements(probs, context_sz, axis=0)
 negloglikelihood = metrics.sparse_categorical_crossentropy(x_con, probs)
@@ -171,8 +172,6 @@ S = Embedding(input_dim=original_dim,output_dim=emb_sz)
 # Prior for target word
 prior_loc = L(x_tar_2)
 prior_scale = Dense(emb_sz, activation='softplus')(S(x_tar_2))
-
-
 
 print("z_log_var=",z_log_var.shape)
 print("z_mean=",z_mean.shape)
