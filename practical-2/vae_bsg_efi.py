@@ -27,6 +27,7 @@ import tensorflow as tf
 import util
 import csv
 import time
+import keras.callbacks as cbks
 
 
 from nltk import sent_tokenize
@@ -44,24 +45,25 @@ dataset = "hansards"
 dataset = "test"
 
 dataset = "hansards"
+dataset = "test"
+dataset = "hansards"
 
 
 if dataset == "hansards":# hansards
     batch_size = 8
-    epochs = 50
+    epochs = 2
     emb_sz=100
     hidden=100
     most_common = 7000
    # filename = './data/hansards/training_25kL.txt'
     filename = './data/hansards/training_5kL.txt'
 else:
-    batch_size = 8
-    epochs = 40
+    batch_size = 4
+    epochs = 8
     emb_sz=100
     hidden=100
-    most_common = 1550
+    most_common = 1600
     filename = './data/test.en'
-
 
 epsilon_std = 1.0
 window_size=5
@@ -138,35 +140,35 @@ print('x_decoded_mean shape=', x_decoded_mean.shape)
 x_decoded_mean = Lambda(lambda y: K.repeat_elements(y, context_sz, axis=0))(x_decoded_mean )
 print('x_decoded_mean shape REPEAT=', x_decoded_mean.shape)
 
-
 vae = Model(inputs=[x, x_hot],outputs=x_decoded_mean)
 
 # VAE loss = mse_loss or xent_loss + kl_loss
 # reshape here to flatten the contexts of each central word
-x_hot
+
 #x_hot_flat=K.reshape(x_hot, (-1,original_dim ))
-#x_hot_flat=K.reshape(x_hot, (-1,))
-x_hot_flat=K.flatten(x_hot)
+#
+#x_hot = tf.Print(data=[x_hot],input_=x_hot, message="x_hot")
+
+x_hot_flat=K.reshape(x_hot, (-1,))
+#x_hot_flat=K.flatten(x_hot)
 print("shape x_hot=", x_hot_flat.shape)
+x_hot_flat_2 = K.one_hot(x_hot_flat, original_dim)
 
-#enc = OneHotEncoder(sparse=False) # Key here is sparse=False!
-#x_hot_flat_2 = enc.fit_transform(x_hot_flat)
-x_hot_flat_2 = K.one_hot(x_hot_flat, corpus_sz)
-
+#x_decoded_mean = tf.Print(data=[x_decoded_mean],input_=x_decoded_mean, message="x_dec")
+print("shape x_hot_flat_2=", x_hot_flat_2.shape)
 print("x_decoded_mean=",x_decoded_mean.shape)
-reconstruction_loss = original_dim * metrics.binary_crossentropy(x_hot_flat_2, x_decoded_mean)
-print("rec_loss=", reconstruction_loss.shape)
-reconstruction_loss *= original_dim
-print("rec_loss=", reconstruction_loss.shape)
-kl_loss = 1 + z_log_var - K.square(z_mean) - K.exp(z_log_var)
-print("z_log_var=",z_log_var.shape)
-print("K.square(z_mean)=",K.square(z_mean).shape)
+reconstruction_loss = original_dim * metrics.binary_crossentropy(x_decoded_mean,x_hot_flat_2)
 
-kl_loss = K.sum(kl_loss, axis=-1)
+print("rec_loss=", reconstruction_loss.shape)
+print("rec_loss=", reconstruction_loss.shape)
+kl_loss = K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
+print("z_log_var=",z_log_var.shape)
+
+print("K.square(z_mean)=",K.square(z_mean).shape)
 kl_loss *= -0.5
 kl_loss =  K.repeat_elements(kl_loss, context_sz, axis=0)
+#kl_loss = tf.Print(data=[kl_loss],input_=kl_loss, message="kl_loss")
 print("kl_loss=", kl_loss.shape)
-
 vae_loss = K.mean(reconstruction_loss + kl_loss)
 print("vae_loss=", vae_loss.shape)
 
@@ -180,7 +182,7 @@ vae.fit([x_train, X_hot],
 
 
 
-embeddings_file = "./output/embeddings_vocab_%s_ep_%s_emb_%s_hid_%s_%s_%s_test_%s_bsg.txt"%(corpus_dim,epochs,emb_sz,hidden,batch_size, dataset,most_common)
+embeddings_file = "./output/embeddings_vocab_%s_ep_%s_emb_%s_hid_%s_%s_%s_test_%s_cat_bsg.txt"%(corpus_dim,epochs,emb_sz,hidden,batch_size, dataset,most_common)
 embeddings = vae.get_layer("decoder").get_weights()[0]
 
 util.save_embeddings(embeddings_file, embeddings, tr_idx2word)
