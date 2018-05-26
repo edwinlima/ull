@@ -138,7 +138,7 @@ print('x_decoded_mean shape=', x_decoded_mean.shape)
 x_decoded_mean = Lambda(lambda y: K.repeat_elements(y, context_sz, axis=0))(x_decoded_mean )
 print('x_decoded_mean shape REPEAT=', x_decoded_mean.shape)
 
-vae = Model(inputs=[x, x_hot],outputs=x_decoded_mean)
+#vae = Model(inputs=[x, x_hot],outputs=x_decoded_mean)
 
 # VAE loss = mse_loss or xent_loss + kl_loss
 # reshape here to flatten the contexts of each central word
@@ -147,10 +147,11 @@ vae = Model(inputs=[x, x_hot],outputs=x_decoded_mean)
 #
 #x_hot = tf.Print(data=[x_hot],input_=x_hot, message="x_hot")
 
-x_hot_flat=K.reshape(x_hot, (-1,))
+#x_hot_flat=K.reshape(x_hot, (-1,))
 #x_hot_flat=K.flatten(x_hot)
-print("shape x_hot=", x_hot_flat.shape)
-x_hot_flat_2 = K.one_hot(x_hot_flat, original_dim)
+##print("shape x_hot=", x_hot_flat.shape)
+#x_hot_flat_2 = K.one_hot(x_hot_flat, original_dim)
+
 
 #x_decoded_mean = tf.Print(data=[x_decoded_mean],input_=x_decoded_mean, message="x_dec")
 print("shape x_hot_flat_2=", x_hot_flat_2.shape)
@@ -162,9 +163,9 @@ reconstruction_loss = original_dim * metrics.binary_crossentropy(x_decoded_mean,
 print("rec_loss=", reconstruction_loss.shape)
 print("rec_loss=", reconstruction_loss.shape)
 
-kl_loss_posterior = K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
-kl_loss_prior = K.sum(1 + prior_scale - K.square(prior_location) - K.exp(prior_scale), axis=-1)
-total_kl_loss = kl_loss_posterior + kl_loss_prior
+kl_loss = K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
+#kl_loss_prior = K.sum(1 + prior_scale - K.square(prior_location) - K.exp(prior_scale), axis=-1)
+#total_kl_loss = kl_loss_posterior + kl_loss_prior
 print("z_log_var=",z_log_var.shape)
 
 print("K.square(z_mean)=",K.square(z_mean).shape)
