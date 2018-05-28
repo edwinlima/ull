@@ -22,7 +22,7 @@ epoch_size = 4
 optim = 'rmsprop'
 batch_size = 128
 tenacity = 3
-epoch_size = 2
+epoch_size = 30
 
 # Set PATHs
 PATH_TO_SENTEVAL = '../../SentEval/'
@@ -36,6 +36,8 @@ PATH_TO_VEC = './skipgram_ep_30_size_100_mincount_None_win_None.vec'
 PATH_TO_VEC = './skipgram_europarl_ep_30_size_100_mincount_200_win_5.vec'
 PATH_TO_VEC = './skipgram_europarl_ep_40_size_100_mincount_200_win_5.vec'
 PATH_TO_VEC = './skipgram_europarl_ep_20_size_100_mincount_200_win_5.vec'
+PATH_TO_VEC = './skipgram_europarl_ep_30_size_100_mincount_10_win_5.vec'
+PATH_TO_VEC = './skipgram_europarl_ep_30_size_100_mincount_200_win_5.vec'
 emb_size = 100
 
 #PATH_TO_VEC = './skipgram_ep_30_size_300_mincount_10_win_5.vec'
@@ -114,6 +116,18 @@ if __name__ == "__main__":
                       'BigramShift', 'Tense', 'SubjNumber', 'ObjNumber',
                       'OddManOut', 'CoordinationInversion']
 
+
+    transfer_tasks = [
+                      'Length', 'WordContent', 'Depth', 'TopConstituents',
+                      'BigramShift', 'Tense', 'SubjNumber', 'ObjNumber',
+                      'OddManOut', 'CoordinationInversion']
+    transfer_tasks = ['MR', 'CR', 'MPQA', 'SUBJ', 'SST2', 'TREC',
+                      'MRPC', 'SICKEntailment']
+
  
     results = se.eval(transfer_tasks)
     print(results)
+    import json
+    file = open("{0}/{1}.result".format(logPath, fileName),'w')
+    file.write(json.dumps(results))
+    file.close()
