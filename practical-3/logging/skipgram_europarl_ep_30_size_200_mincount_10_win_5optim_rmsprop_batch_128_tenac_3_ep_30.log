@@ -1,0 +1,140 @@
+***** Transfer task : MR *****
+
+
+Found 618 words with word vectors, out of         735 words
+Generating sentence embeddings
+Generated sentence embeddings
+Training sklearn-LogReg with (inner) 10-fold cross-validation
+Best param found at split 1: l2reg = 8                 with score 49.05
+Best param found at split 2: l2reg = 4                 with score 38.0
+Best param found at split 3: l2reg = 1                 with score 48.0
+Best param found at split 4: l2reg = 8                 with score 39.86
+Best param found at split 5: l2reg = 0.5                 with score 51.29
+Best param found at split 6: l2reg = 1                 with score 49.81
+Best param found at split 7: l2reg = 0.25                 with score 35.57
+Best param found at split 8: l2reg = 0.5                 with score 39.62
+Best param found at split 9: l2reg = 4                 with score 49.24
+Best param found at split 10: l2reg = 0.25                 with score 45.67
+Dev acc : 44.61 Test acc : 36.86
+
+***** Transfer task : CR *****
+
+
+Found 4229 words with word vectors, out of         5677 words
+Generating sentence embeddings
+Generated sentence embeddings
+Training sklearn-LogReg with (inner) 10-fold cross-validation
+Best param found at split 1: l2reg = 1                 with score 76.27
+Best param found at split 2: l2reg = 1                 with score 75.09
+Best param found at split 3: l2reg = 0.5                 with score 75.98
+Best param found at split 4: l2reg = 0.5                 with score 76.25
+Best param found at split 5: l2reg = 0.25                 with score 76.01
+Best param found at split 6: l2reg = 0.25                 with score 76.74
+Best param found at split 7: l2reg = 0.5                 with score 75.77
+Best param found at split 8: l2reg = 0.25                 with score 75.46
+Best param found at split 9: l2reg = 0.25                 with score 76.37
+Best param found at split 10: l2reg = 0.5                 with score 75.91
+Dev acc : 75.98 Test acc : 76.0
+
+***** Transfer task : MPQA *****
+
+
+Found 5774 words with word vectors, out of         6241 words
+Generating sentence embeddings
+Generated sentence embeddings
+Training sklearn-LogReg with (inner) 10-fold cross-validation
+Best param found at split 1: l2reg = 0.25                 with score 86.17
+Best param found at split 2: l2reg = 8                 with score 86.63
+Best param found at split 3: l2reg = 0.25                 with score 86.34
+Best param found at split 4: l2reg = 8                 with score 86.5
+Best param found at split 5: l2reg = 0.25                 with score 86.21
+Best param found at split 6: l2reg = 0.25                 with score 86.34
+Best param found at split 7: l2reg = 8                 with score 86.11
+Best param found at split 8: l2reg = 2                 with score 86.35
+Best param found at split 9: l2reg = 0.25                 with score 86.52
+Best param found at split 10: l2reg = 0.25                 with score 86.09
+Dev acc : 86.33 Test acc : 86.48
+
+***** Transfer task : SUBJ *****
+
+
+Found 9591 words with word vectors, out of         14847 words
+Generating sentence embeddings
+Generated sentence embeddings
+Training sklearn-LogReg with (inner) 10-fold cross-validation
+Best param found at split 1: l2reg = 0.5                 with score 99.6
+Best param found at split 2: l2reg = 0.25                 with score 99.58
+Best param found at split 3: l2reg = 0.25                 with score 99.58
+Best param found at split 4: l2reg = 0.5                 with score 99.62
+Best param found at split 5: l2reg = 0.25                 with score 99.6
+Best param found at split 6: l2reg = 0.25                 with score 99.58
+Best param found at split 7: l2reg = 0.25                 with score 99.58
+Best param found at split 8: l2reg = 0.25                 with score 99.58
+Best param found at split 9: l2reg = 0.25                 with score 99.58
+Best param found at split 10: l2reg = 0.25                 with score 99.58
+Dev acc : 99.59 Test acc : 99.58
+
+***** Transfer task : SST Binary classification *****
+
+
+Found 10598 words with word vectors, out of         17561 words
+Computing embedding for train
+Computed train embeddings
+Computing embedding for dev
+Computed dev embeddings
+Computing embedding for test
+Computed test embeddings
+Training sklearn-LogReg with standard validation..
+[('reg:0.25', 71.9), ('reg:0.5', 71.9), ('reg:1', 71.9), ('reg:2', 71.9), ('reg:4', 71.9), ('reg:8', 71.9)]
+Validation : best param found is reg = 0.25 with score             71.9
+Evaluating...
+
+Dev acc : 71.9 Test acc : 72.65 for             SST Binary classification
+
+***** Transfer task : TREC *****
+
+
+Found 4710 words with word vectors, out of         9779 words
+Computed train embeddings
+Computed test embeddings
+Training sklearn-LogReg with 10-fold cross-validation
+[('reg:0.5', 67.1), ('reg:1', 66.97), ('reg:2', 66.9), ('reg:4', 66.75), ('reg:8', 66.75), ('reg:16', 66.75), ('reg:32', 66.64)]
+Cross-validation : best param found is reg = 0.5             with score 67.1
+Evaluating...
+
+Dev acc : 67.1 Test acc : 66.8             for TREC
+
+***** Transfer task : MRPC *****
+
+
+Found 9389 words with word vectors, out of         19556 words
+Computing embedding for train
+Computed train embeddings
+Computing embedding for test
+Computed test embeddings
+Training sklearn-LogReg with 10-fold cross-validation
+[('reg:0.5', 70.41), ('reg:1', 70.22), ('reg:2', 70.17), ('reg:4', 70.07), ('reg:8', 70.02), ('reg:16', 69.99), ('reg:32', 69.97)]
+Cross-validation : best param found is reg = 0.5             with score 70.41
+Evaluating...
+Dev acc : 70.41 Test acc 71.3; Test F1 80.14 for MRPC.
+
+***** Transfer task : SICK-Entailment*****
+
+
+Found 1780 words with word vectors, out of         2414 words
+Computing embedding for train
+Computed train embeddings
+Computing embedding for dev
+Computed dev embeddings
+Computing embedding for test
+Computed test embeddings
+Training sklearn-LogReg with standard validation..
+[('reg:0.25', 73.8), ('reg:0.5', 73.6), ('reg:1', 73.4), ('reg:2', 73.4), ('reg:4', 72.6), ('reg:8', 72.6)]
+Validation : best param found is reg = 0.25 with score             73.8
+Evaluating...
+
+Dev acc : 73.8 Test acc : 75.4 for                        SICK entailment
+
+***** Transfer task : STS14 *****
+
+
