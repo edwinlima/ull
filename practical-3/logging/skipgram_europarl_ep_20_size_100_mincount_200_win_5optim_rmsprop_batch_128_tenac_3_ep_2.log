@@ -1,0 +1,314 @@
+***** Transfer task : MR *****
+
+
+Found 407 words with word vectors, out of         735 words
+Generating sentence embeddings
+Generated sentence embeddings
+Training sklearn-LogReg with (inner) 10-fold cross-validation
+Best param found at split 1: l2reg = 4                 with score 38.24
+Best param found at split 2: l2reg = 1                 with score 26.0
+Best param found at split 3: l2reg = 0.25                 with score 38.0
+Best param found at split 4: l2reg = 2                 with score 38.1
+Best param found at split 5: l2reg = 0.25                 with score 41.29
+Best param found at split 6: l2reg = 1                 with score 45.05
+Best param found at split 7: l2reg = 0.25                 with score 36.9
+Best param found at split 8: l2reg = 0.25                 with score 35.57
+Best param found at split 9: l2reg = 0.25                 with score 40.1
+Best param found at split 10: l2reg = 2                 with score 41.62
+Dev acc : 38.09 Test acc : 32.48
+
+***** Transfer task : CR *****
+
+
+Found 2471 words with word vectors, out of         5677 words
+Generating sentence embeddings
+Generated sentence embeddings
+Training sklearn-LogReg with (inner) 10-fold cross-validation
+Best param found at split 1: l2reg = 0.25                 with score 72.59
+Best param found at split 2: l2reg = 0.5                 with score 71.89
+Best param found at split 3: l2reg = 0.5                 with score 72.48
+Best param found at split 4: l2reg = 0.5                 with score 72.74
+Best param found at split 5: l2reg = 2                 with score 71.65
+Best param found at split 6: l2reg = 0.25                 with score 72.27
+Best param found at split 7: l2reg = 0.5                 with score 71.83
+Best param found at split 8: l2reg = 0.25                 with score 72.34
+Best param found at split 9: l2reg = 0.25                 with score 72.84
+Best param found at split 10: l2reg = 0.5                 with score 72.43
+Dev acc : 72.31 Test acc : 72.16
+
+***** Transfer task : MPQA *****
+
+
+Found 3366 words with word vectors, out of         6241 words
+Generating sentence embeddings
+Generated sentence embeddings
+Training sklearn-LogReg with (inner) 10-fold cross-validation
+Best param found at split 1: l2reg = 1                 with score 83.86
+Best param found at split 2: l2reg = 2                 with score 84.4
+Best param found at split 3: l2reg = 1                 with score 83.92
+Best param found at split 4: l2reg = 1                 with score 84.04
+Best param found at split 5: l2reg = 0.5                 with score 83.81
+Best param found at split 6: l2reg = 4                 with score 84.29
+Best param found at split 7: l2reg = 0.5                 with score 83.78
+Best param found at split 8: l2reg = 0.5                 with score 84.14
+Best param found at split 9: l2reg = 0.25                 with score 84.23
+Best param found at split 10: l2reg = 1                 with score 83.68
+Dev acc : 84.02 Test acc : 84.09
+
+***** Transfer task : SUBJ *****
+
+
+Found 3984 words with word vectors, out of         14847 words
+Generating sentence embeddings
+Generated sentence embeddings
+Training sklearn-LogReg with (inner) 10-fold cross-validation
+Best param found at split 1: l2reg = 0.25                 with score 99.6
+Best param found at split 2: l2reg = 0.25                 with score 99.6
+Best param found at split 3: l2reg = 0.25                 with score 99.58
+Best param found at split 4: l2reg = 0.25                 with score 99.58
+Best param found at split 5: l2reg = 0.25                 with score 99.56
+Best param found at split 6: l2reg = 0.25                 with score 99.6
+Best param found at split 7: l2reg = 0.25                 with score 99.6
+Best param found at split 8: l2reg = 0.25                 with score 99.56
+Best param found at split 9: l2reg = 0.25                 with score 99.6
+Best param found at split 10: l2reg = 0.25                 with score 99.54
+Dev acc : 99.58 Test acc : 99.6
+
+***** Transfer task : SST Binary classification *****
+
+
+Found 4130 words with word vectors, out of         17561 words
+Computing embedding for train
+Computed train embeddings
+Computing embedding for test
+Computed test embeddings
+Computing embedding for dev
+Computed dev embeddings
+Training sklearn-LogReg with standard validation..
+[('reg:0.25', 67.43), ('reg:0.5', 67.32), ('reg:1', 67.32), ('reg:2', 67.32), ('reg:4', 67.32), ('reg:8', 67.32)]
+Validation : best param found is reg = 0.25 with score             67.43
+Evaluating...
+
+Dev acc : 67.43 Test acc : 66.39 for             SST Binary classification
+
+***** Transfer task : SST Fine-Grained classification *****
+
+
+Found 4327 words with word vectors, out of         19539 words
+Computing embedding for train
+Computed train embeddings
+Computing embedding for test
+Computed test embeddings
+Computing embedding for dev
+Computed dev embeddings
+Training sklearn-LogReg with standard validation..
+[('reg:0.25', 34.33), ('reg:0.5', 34.33), ('reg:1', 34.6), ('reg:2', 34.6), ('reg:4', 34.51), ('reg:8', 34.42)]
+Validation : best param found is reg = 1 with score             34.6
+Evaluating...
+
+Dev acc : 34.6 Test acc : 33.44 for             SST Fine-Grained classification
+
+***** Transfer task : TREC *****
+
+
+Found 2940 words with word vectors, out of         9779 words
+Computed train embeddings
+Computed test embeddings
+Training sklearn-LogReg with 10-fold cross-validation
+[('reg:0.5', 70.14), ('reg:1', 70.25), ('reg:2', 70.31), ('reg:4', 70.38), ('reg:8', 70.32), ('reg:16', 70.34), ('reg:32', 70.43)]
+Cross-validation : best param found is reg = 32             with score 70.43
+Evaluating...
+
+Dev acc : 70.43 Test acc : 76.6             for TREC
+
+***** Transfer task : MRPC *****
+
+
+Found 5518 words with word vectors, out of         19556 words
+Computing embedding for train
+Computed train embeddings
+Computing embedding for test
+Computed test embeddings
+Training sklearn-LogReg with 10-fold cross-validation
+[('reg:0.5', 70.07), ('reg:1', 70.02), ('reg:2', 70.02), ('reg:4', 69.95), ('reg:8', 69.95), ('reg:16', 69.9), ('reg:32', 69.87)]
+Cross-validation : best param found is reg = 0.5             with score 70.07
+Evaluating...
+Dev acc : 70.07 Test acc 70.84; Test F1 79.82 for MRPC.
+
+***** Transfer task : SICK-Entailment*****
+
+
+Found 865 words with word vectors, out of         2414 words
+Computing embedding for train
+Computed train embeddings
+Computing embedding for test
+Computed test embeddings
+Computing embedding for dev
+Computed dev embeddings
+Training sklearn-LogReg with standard validation..
+[('reg:0.25', 67.8), ('reg:0.5', 68.4), ('reg:1', 68.4), ('reg:2', 68.6), ('reg:4', 68.6), ('reg:8', 68.6)]
+Validation : best param found is reg = 2 with score             68.6
+Evaluating...
+
+Dev acc : 68.6 Test acc : 71.67 for                        SICK entailment
+
+***** Transfer task : SICK-Relatedness*****
+
+
+Found 865 words with word vectors, out of         2414 words
+Computing embedding for train
+Computed train embeddings
+Computing embedding for test
+Computed test embeddings
+Computing embedding for dev
+Computed dev embeddings
+
+
+***** Transfer task : STSBenchmark*****
+
+
+Found 4572 words with word vectors, out of         15889 words
+Computing embedding for train
+Computed train embeddings
+Computing embedding for dev
+Computed dev embeddings
+Computing embedding for test
+Computed test embeddings
+***** (Probing) Transfer task : LENGTH classification *****
+Loaded 99996 train - 9996 dev - 9996 test for Length
+Found 6445 words with word vectors, out of         36851 words
+Computing embeddings for train/dev/test
+Computed embeddings
+Training sklearn-LogReg with standard validation..
+[('reg:0.25', 38.81), ('reg:0.5', 38.86), ('reg:1', 38.84), ('reg:2', 38.84), ('reg:4', 38.86), ('reg:8', 38.82)]
+Validation : best param found is reg = 0.5 with score             38.86
+Evaluating...
+
+Dev acc : 38.9 Test acc : 36.3 for LENGTH classification
+
+***** (Probing) Transfer task : WORDCONTENT classification *****
+Loaded 100000 train - 10000 dev - 10000 test for WordContent
+Found 6312 words with word vectors, out of         40111 words
+Computing embeddings for train/dev/test
+Computed embeddings
+Training sklearn-LogReg with standard validation..
+***** (Probing) Transfer task : LENGTH classification *****
+Loaded 99996 train - 9996 dev - 9996 test for Length
+Found 6445 words with word vectors, out of         36851 words
+Computing embeddings for train/dev/test
+Computed embeddings
+Training sklearn-LogReg with standard validation..
+[('reg:0.25', 38.81), ('reg:0.5', 38.86), ('reg:1', 38.84), ('reg:2', 38.84), ('reg:4', 38.86), ('reg:8', 38.82)]
+Validation : best param found is reg = 0.5 with score             38.86
+Evaluating...
+
+Dev acc : 38.9 Test acc : 36.3 for LENGTH classification
+
+***** (Probing) Transfer task : WORDCONTENT classification *****
+Loaded 100000 train - 10000 dev - 10000 test for WordContent
+Found 6312 words with word vectors, out of         40111 words
+Computing embeddings for train/dev/test
+Computed embeddings
+Training sklearn-LogReg with standard validation..
+[('reg:0.25', 28.88), ('reg:0.5', 29.31), ('reg:1', 29.55), ('reg:2', 29.55), ('reg:4', 29.43), ('reg:8', 29.27)]
+Validation : best param found is reg = 1 with score             29.55
+Evaluating...
+
+Dev acc : 29.6 Test acc : 30.1 for WORDCONTENT classification
+
+***** (Probing) Transfer task : DEPTH classification *****
+Loaded 100000 train - 10000 dev - 10000 test for Depth
+Found 6280 words with word vectors, out of         37072 words
+Computing embeddings for train/dev/test
+Computed embeddings
+Training sklearn-LogReg with standard validation..
+[('reg:0.25', 29.73), ('reg:0.5', 29.8), ('reg:1', 29.78), ('reg:2', 29.83), ('reg:4', 29.81), ('reg:8', 29.8)]
+Validation : best param found is reg = 2 with score             29.83
+Evaluating...
+
+Dev acc : 29.8 Test acc : 29.6 for DEPTH classification
+
+***** (Probing) Transfer task : TOPCONSTITUENTS classification *****
+Loaded 100000 train - 10000 dev - 10000 test for TopConstituents
+Found 6253 words with word vectors, out of         37444 words
+Computing embeddings for train/dev/test
+Computed embeddings
+Training sklearn-LogReg with standard validation..
+[('reg:0.25', 53.09), ('reg:0.5', 53.1), ('reg:1', 53.21), ('reg:2', 53.16), ('reg:4', 53.16), ('reg:8', 53.23)]
+Validation : best param found is reg = 8 with score             53.23
+Evaluating...
+
+Dev acc : 53.2 Test acc : 54.1 for TOPCONSTITUENTS classification
+
+***** (Probing) Transfer task : BIGRAMSHIFT classification *****
+Loaded 100000 train - 10000 dev - 10000 test for BigramShift
+Found 6262 words with word vectors, out of         38690 words
+Computing embeddings for train/dev/test
+Computed embeddings
+Training sklearn-LogReg with standard validation..
+[('reg:0.25', 49.45), ('reg:0.5', 49.42), ('reg:1', 49.41), ('reg:2', 49.47), ('reg:4', 49.41), ('reg:8', 49.45)]
+Validation : best param found is reg = 2 with score             49.47
+Evaluating...
+
+Dev acc : 49.5 Test acc : 50.3 for BIGRAMSHIFT classification
+
+***** (Probing) Transfer task : TENSE classification *****
+Loaded 100000 train - 10000 dev - 10000 test for Tense
+Found 6141 words with word vectors, out of         38618 words
+Computing embeddings for train/dev/test
+Computed embeddings
+Training sklearn-LogReg with standard validation..
+[('reg:0.25', 69.51), ('reg:0.5', 69.42), ('reg:1', 69.4), ('reg:2', 69.33), ('reg:4', 69.33), ('reg:8', 69.36)]
+Validation : best param found is reg = 0.25 with score             69.51
+Evaluating...
+
+Dev acc : 69.5 Test acc : 66.4 for TENSE classification
+
+***** (Probing) Transfer task : SUBJNUMBER classification *****
+Loaded 100000 train - 10000 dev - 10000 test for SubjNumber
+Found 6583 words with word vectors, out of         41300 words
+Computing embeddings for train/dev/test
+Computed embeddings
+Training sklearn-LogReg with standard validation..
+[('reg:0.25', 73.52), ('reg:0.5', 73.53), ('reg:1', 73.56), ('reg:2', 73.51), ('reg:4', 73.47), ('reg:8', 73.49)]
+Validation : best param found is reg = 1 with score             73.56
+Evaluating...
+
+Dev acc : 73.6 Test acc : 71.9 for SUBJNUMBER classification
+
+***** (Probing) Transfer task : OBJNUMBER classification *****
+Loaded 100000 train - 10000 dev - 10000 test for ObjNumber
+Found 6508 words with word vectors, out of         40858 words
+Computing embeddings for train/dev/test
+Computed embeddings
+Training sklearn-LogReg with standard validation..
+[('reg:0.25', 67.99), ('reg:0.5', 67.9), ('reg:1', 67.82), ('reg:2', 67.81), ('reg:4', 67.82), ('reg:8', 67.8)]
+Validation : best param found is reg = 0.25 with score             67.99
+Evaluating...
+
+Dev acc : 68.0 Test acc : 68.8 for OBJNUMBER classification
+
+***** (Probing) Transfer task : ODDMANOUT classification *****
+Loaded 100000 train - 10000 dev - 10000 test for OddManOut
+Found 6760 words with word vectors, out of         46206 words
+Computing embeddings for train/dev/test
+Computed embeddings
+Training sklearn-LogReg with standard validation..
+[('reg:0.25', 50.32), ('reg:0.5', 50.31), ('reg:1', 50.33), ('reg:2', 50.34), ('reg:4', 50.37), ('reg:8', 50.4)]
+Validation : best param found is reg = 8 with score             50.4
+Evaluating...
+
+Dev acc : 50.4 Test acc : 50.1 for ODDMANOUT classification
+
+***** (Probing) Transfer task : COORDINATIONINVERSION classification *****
+Loaded 100002 train - 10002 dev - 10002 test for CoordinationInversion
+Found 6134 words with word vectors, out of         36664 words
+Computing embeddings for train/dev/test
+Computed embeddings
+Training sklearn-LogReg with standard validation..
+[('reg:0.25', 52.89), ('reg:0.5', 52.81), ('reg:1', 52.88), ('reg:2', 52.84), ('reg:4', 52.87), ('reg:8', 52.89)]
+Validation : best param found is reg = 0.25 with score             52.89
+Evaluating...
+
+Dev acc : 52.9 Test acc : 53.2 for COORDINATIONINVERSION classification
+
