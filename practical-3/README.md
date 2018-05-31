@@ -9,6 +9,7 @@ Dependencies:
 
 ## bow.py
 Runs SentEval for 8 tasks:
+
             MR     
             CR     
             MPQA   
