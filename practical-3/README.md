@@ -1,10 +1,14 @@
 # Evaluating Sentence Representations
 
-Dependencies: SentEval: https://github.com/facebookresearch/SentEval
-              EmbedAlign: https://github.com/uva-slpl/embedalign
+Dependencies: 
+
+1. SentEval: https://github.com/facebookresearch/SentEval
+
+2. EmbedAlign: https://github.com/uva-slpl/embedalign
 
 
-## bow.py: Runs SentEval for 8 tasks:
+## bow.py
+Runs SentEval for 8 tasks:
             MR     
             CR     
             MPQA   
@@ -18,7 +22,8 @@ Dependencies: SentEval: https://github.com/facebookresearch/SentEval
             
             
             
-## senteval_embedalign.ipynb: Runs SentEval for EmbedAlign word embeddings
+## senteval_embedalign.ipynb
+Runs SentEval for EmbedAlign word embeddings
 
 
 
