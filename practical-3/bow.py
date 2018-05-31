@@ -29,21 +29,30 @@ PATH_TO_SENTEVAL = '../../SentEval/'
 PATH_TO_DATA = PATH_TO_SENTEVAL + '/data'
 # PATH_TO_VEC = 'glove/glove.840B.300d.txt'
 PATH_TO_VEC = PATH_TO_SENTEVAL + 'examples/fasttext/crawl-300d-2M.vec'
-PATH_TO_VEC = './skipgram_ep_30_size_100_mincount_10_win_5.vec'
-PATH_TO_VEC = './skipgram_ep_30_size_100_mincount_1_win_5.vec'
-PATH_TO_VEC = './skipgram_ep_30_size_100_mincount_20_win_5.vec'
-PATH_TO_VEC = './skipgram_ep_30_size_100_mincount_None_win_None.vec'
 PATH_TO_VEC = './skipgram_europarl_ep_30_size_100_mincount_200_win_5.vec'
 PATH_TO_VEC = './skipgram_europarl_ep_40_size_100_mincount_200_win_5.vec'
 PATH_TO_VEC = './skipgram_europarl_ep_20_size_100_mincount_200_win_5.vec'
 PATH_TO_VEC = './skipgram_europarl_ep_30_size_100_mincount_10_win_5.vec'
-PATH_TO_VEC = './skipgram_europarl_ep_30_size_100_mincount_200_win_5.vec'
+PATH_TO_VEC = './skipgram_europarl_ep_30_size_100_mincount_10_win_10.vec'
+PATH_TO_VEC = './skipgram_europarl_ep_30_size_100_mincount_5_win_5_min_sent.vec'
+PATH_TO_VEC = './skipgram_europarl_ep_30_size_100_mincount_10_win_5.vec'
+#PATH_TO_VEC = './skipgram_europarl_ep_30_size_100_mincount_10_win_10.vec'
+PATH_TO_VEC = './skipgram_ep_30_size_100_mincount_10_win_5.vec'
+
+# FINAL PATHS hopefully
+PATH_TO_VEC = './skipgram_europarl_downloaded_ep_30_size_100_mincount_10_win_5_min_sent.vec'
+PATH_TO_VEC = './skipgram_europarl_downloaded_ep_30_size_100_mincount_5_win_5_min_sent.vec'
+PATH_TO_VEC = './skipgram_europarl_downloaded_ep_30_size_100_mincount_5_win_10_min_sent.vec'
+PATH_TO_VEC = './skipgram_europarl_downloaded_ep_30_size_100_mincount_100_win_5_min_sent.vec'
+PATH_TO_VEC = './skipgram_europarl_downloaded_ep_30_size_100_mincount_100_win_10_min_sent.vec'
+PATH_TO_VEC = './skipgram_europarl_downloaded_ep_30_size_100_mincount_10_win_10_min_sent.vec'
+
 emb_size = 100
 
 #PATH_TO_VEC = './skipgram_ep_30_size_300_mincount_10_win_5.vec'
 #emb_size = 300
 
-logPath = './logging/'
+logPath = './logging/efi/'
 fileName = os.path.splitext(PATH_TO_VEC)[0]  + "optim_%s_batch_%s_tenac_%s_ep_%s"%(optim, batch_size,tenacity, epoch_size)
 
 # import SentEval
