@@ -8,16 +8,8 @@ Dependencies:
 
 
 ## bow.py
-Runs SentEval for 8 tasks:
 
-            MR     
-            CR     
-            MPQA   
-            SUBJ   
-            SST2   
-            TREC   
-            MRPC   
-            SICK-E 
+Runs SentEval for 8 tasks: MR, CR, MPQA, SUBJ, SST2, TREC, MRPC, SICK-E 
            
 ### Instructions
 Change PATH_TO_SENTEVAL for SentEval source code
