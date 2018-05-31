@@ -17,8 +17,11 @@ Runs SentEval for 8 tasks:
             TREC   
             MRPC   
             SICK-E 
-            Change PATH_TO_SENTEVAL for SentEval source code
-            Change the "PATH_TO_VEC" to point to a new word embeding file.
+           
+### Instructions
+Change PATH_TO_SENTEVAL for SentEval source code
+
+Change the "PATH_TO_VEC" to point to a new word embeding file.
             
             
             
